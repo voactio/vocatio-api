@@ -63,7 +63,14 @@ public class UsuarioController {
     // FUNCIONALIDAD 3 - INICIAR SESION (LOGIN)
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request){
-        return ResponseEntity.ok(usuarioService.login(request));
+        try{
+            Map<String, Object> response = usuarioService.login(request);
+            return ResponseEntity.ok(response);
+        }catch (IllegalArgumentException e){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensaje", e.getMessage()));
+        }catch (RuntimeException e){
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("mensaje", e.getMessage()));
+        }
     }
 }
 
