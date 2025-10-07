@@ -70,24 +70,20 @@ public class UsuarioService {
     }
 
     // FUNCIONALIDAD 3 - INICIAR SESION
-    public ResponseEntity<?> login(LoginRequest request) {
+    public Map<String, Object> login(LoginRequest request) {
         if (request.getCorreo() == null || request.getCorreo().isEmpty())
-            return ResponseEntity.badRequest().body(Map.of("mensaje", "El correo no puede estar vacío"));
+            throw new IllegalArgumentException("El correo no puede estar vacío");
 
         if (request.getContrasena() == null || request.getContrasena().isEmpty())
-            return ResponseEntity.badRequest().body(Map.of("mensaje","La  contraseña no puede estar vacía"));
+            throw new IllegalArgumentException("La contraseña no puede estar vacía");
 
         if (!request.getCorreo().contains("@"))
-            return ResponseEntity.badRequest().body(Map.of("mensaje", "Ingresa un correo válido"));
+            throw new IllegalArgumentException("Ingresa un correo válido");
 
-        Optional<Usuario> usuarioOpt = usuarioRepository.findByCorreo(request.getCorreo());
-        if (usuarioOpt.isEmpty())
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("mensaje", "Usuario no encontrado"));
-
-        Usuario user = usuarioOpt.get();
+        Usuario user = usuarioRepository.findByCorreo(request.getCorreo()).orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
         if (!BCrypt.checkpw(request.getContrasena(), user.getContrasena()))
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("mensaje","El correo y/o contraseña no son válidos"));
+            throw new RuntimeException("El correo y/o contraseña no son válidos");
 
         Map<String, Object> response = new HashMap<>();
         response.put("mensaje", "Inicio de sesión exitoso");
@@ -99,7 +95,7 @@ public class UsuarioService {
                 "carreraActual", user.getCarreraActual()
         ));
 
-        return ResponseEntity.ok(response);
+        return response;
     }
 }
 
