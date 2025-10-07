@@ -54,7 +54,9 @@ public class UsuarioService {
 
         // actualizar perfil
         user.setNombre(request.getNombre());
-        user.setContrasena(BCrypt.hashpw(request.getContrasena(), BCrypt.gensalt()));
+        if (request.getContrasena() != null && !request.getContrasena().isBlank()) {
+            user.setContrasena(BCrypt.hashpw(request.getContrasena(), BCrypt.gensalt()));
+        }
         user.setNivelEducativo(request.getNivelEducativo());
 
         if (request.getCarreraActual() != null) {

@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @RestController
@@ -39,19 +40,23 @@ public class UsuarioController {
         try {
             Usuario usuarioModificado = usuarioService.updateUsuario(id, request);
 
-            Map<String, Object> response = Map.of(
-                    "mensaje", "Perfil modificado exitosamente",
-                    "usuario", Map.of(
-                            "id", usuarioModificado.getId(),
-                            "nombre", usuarioModificado.getNombre(),
-                            "correo", usuarioModificado.getCorreo(),
-                            "nivelEducativo", usuarioModificado.getNivelEducativo(),
-                            "carreraActual", usuarioModificado.getCarreraActual(),
-                            "urlImagenPerfil", usuarioModificado.getUrlImagenPerfil(),
-                            "creadoEn", usuarioModificado.getCreadoEn(),
-                            "actualizadoEn", usuarioModificado.getActualizadoEn()
-                    )
-            );
+            if (usuarioModificado == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("mensaje", "Usuario no encontrado"));
+            }
+
+            Map<String, Object> usuarioM = new HashMap<>();
+            usuarioM.put("id", usuarioModificado.getId());
+            usuarioM.put("nombre", usuarioModificado.getNombre());
+            usuarioM.put("correo", usuarioModificado.getCorreo());
+            usuarioM.put("nivelEducativo", usuarioModificado.getNivelEducativo());
+            usuarioM.put("carreraActual", usuarioModificado.getCarreraActual());
+            usuarioM.put("urlImagenPerfil",  usuarioModificado.getUrlImagenPerfil());
+            usuarioM.put("creadoEn", usuarioModificado.getCreadoEn());
+            usuarioM.put("actualizadoEn", usuarioModificado.getActualizadoEn());
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("mensaje", "Usuario actualizado correctamente");
+            response.put("usuario", usuarioM);
 
             return ResponseEntity.ok(response);
         } catch (RuntimeException e){
