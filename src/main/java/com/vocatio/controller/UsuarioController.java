@@ -1,5 +1,6 @@
 package com.vocatio.controller;
 
+import com.vocatio.dto.request.LoginRequest;
 import com.vocatio.dto.request.RegisterUsuarioRequest;
 import com.vocatio.dto.request.UpdateUsuarioRequest;
 import com.vocatio.model.Usuario;
@@ -9,10 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/usuarios")
@@ -62,5 +60,10 @@ public class UsuarioController {
         }
     }
 
+    // FUNCIONALIDAD 3 - INICIAR SESION (LOGIN)
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody LoginRequest request){
+        return ResponseEntity.ok(usuarioService.login(request));
+    }
 }
 

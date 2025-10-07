@@ -1,16 +1,21 @@
 package com.vocatio.service;
 
+import com.vocatio.dto.request.LoginRequest;
 import com.vocatio.dto.request.RegisterUsuarioRequest;
 import com.vocatio.dto.request.UpdateUsuarioRequest;
 import com.vocatio.model.Usuario;
 import com.vocatio.repository.UsuarioRepository;
 import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class UsuarioService {
@@ -62,6 +67,39 @@ public class UsuarioService {
         user.setActualizadoEn(LocalDateTime.now());
 
         return usuarioRepository.save(user);
+    }
+
+    // FUNCIONALIDAD 3 - INICIAR SESION
+    public ResponseEntity<?> login(LoginRequest request) {
+        if (request.getCorreo() == null || request.getCorreo().isEmpty())
+            return ResponseEntity.badRequest().body(Map.of("mensaje", "El correo no puede estar vacío"));
+
+        if (request.getContrasena() == null || request.getContrasena().isEmpty())
+            return ResponseEntity.badRequest().body(Map.of("mensaje","La  contraseña no puede estar vacía"));
+
+        if (!request.getCorreo().contains("@"))
+            return ResponseEntity.badRequest().body(Map.of("mensaje", "Ingresa un correo válido"));
+
+        Optional<Usuario> usuarioOpt = usuarioRepository.findByCorreo(request.getCorreo());
+        if (usuarioOpt.isEmpty())
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("mensaje", "Usuario no encontrado"));
+
+        Usuario user = usuarioOpt.get();
+
+        if (!BCrypt.checkpw(request.getContrasena(), user.getContrasena()))
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("mensaje","El correo y/o contraseña no son válidos"));
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("mensaje", "Inicio de sesión exitoso");
+        response.put("usuario", Map.of(
+                "id", user.getId(),
+                "nombre", user.getNombre(),
+                "correo", user.getCorreo(),
+                "nivelEducativo", user.getNivelEducativo(),
+                "carreraActual", user.getCarreraActual()
+        ));
+
+        return ResponseEntity.ok(response);
     }
 }
 
