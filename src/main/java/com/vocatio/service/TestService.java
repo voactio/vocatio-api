@@ -1,10 +1,12 @@
 package com.vocatio.service;
 
-import com.vocatio.dto.request.SubmitAnswerRequestDTO;
+import com.vocatio.dto.response.CarreraRankingDTO;
+import com.vocatio.dto.response.GraficoInteresDTO;
 import com.vocatio.dto.response.OpcionDTO;
 import com.vocatio.dto.response.PreguntaDTO;
+import com.vocatio.dto.response.ResultadoTestDTO;
 import com.vocatio.dto.response.StartTestResponseDTO;
-import com.vocatio.model.Opcion;
+import com.vocatio.model.Carrera;
 import com.vocatio.model.Pregunta;
 import com.vocatio.model.Test;
 import com.vocatio.model.TestSession;
@@ -14,6 +16,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -24,13 +28,15 @@ public class TestService {
     private final UsuarioRepository usuarioRepository;
     private final TestSessionRepository testSessionRepository;
     private final OpcionRepository opcionRepository;
+    private final CarreraRepository carreraRepository;
 
-    public TestService(TestRepository testRepository, PreguntaRepository preguntaRepository, UsuarioRepository usuarioRepository, TestSessionRepository testSessionRepository, OpcionRepository opcionRepository) {
+    public TestService(TestRepository testRepository, PreguntaRepository preguntaRepository, UsuarioRepository usuarioRepository, TestSessionRepository testSessionRepository, OpcionRepository opcionRepository, CarreraRepository carreraRepository) {
         this.testRepository = testRepository;
         this.preguntaRepository = preguntaRepository;
         this.usuarioRepository = usuarioRepository;
         this.testSessionRepository = testSessionRepository;
         this.opcionRepository = opcionRepository;
+        this.carreraRepository = carreraRepository;
     }
 
     @Transactional
@@ -54,10 +60,7 @@ public class TestService {
     }
 
     @Transactional
-    public PreguntaDTO submitAnswerAndGetNext(Long sessionId, SubmitAnswerRequestDTO answerRequest) {
-        Long preguntaId = answerRequest.getPreguntaId();
-        Long opcionId = answerRequest.getOpcionId();
-
+    public PreguntaDTO submitAnswerAndGetNext(Long sessionId, Long preguntaId, Long opcionId) {
         TestSession session = testSessionRepository.findById(sessionId)
                 .orElseThrow(() -> new RuntimeException("Sesión de test no encontrada"));
 
@@ -65,7 +68,7 @@ public class TestService {
             throw new RuntimeException("Este test ya ha sido completado.");
         }
 
-        Opcion opcionSeleccionada = opcionRepository.findById(opcionId)
+        var opcionSeleccionada = opcionRepository.findById(opcionId)
                 .orElseThrow(() -> new IllegalArgumentException("La opción con id " + opcionId + " no es válida."));
 
         if (!opcionSeleccionada.getPregunta().getId().equals(preguntaId)) {
@@ -88,6 +91,75 @@ public class TestService {
             testSessionRepository.save(session);
             return null;
         }
+    }
+
+    public ResultadoTestDTO getTestResults(Long sessionId) {
+        TestSession session = testSessionRepository.findById(sessionId)
+                .orElseThrow(() -> new RuntimeException("Sesión de test no encontrada"));
+
+        if (!"COMPLETED".equals(session.getEstado())) {
+            throw new RuntimeException("El test para esta sesión aún no ha sido completado.");
+        }
+
+        // 1. Calcular el perfil RIASEC del usuario contando las áreas de interés de sus respuestas
+        Map<String, Long> conteoAreas = session.getRespuestas().values().stream()
+                .map(opcionId -> opcionRepository.findById(opcionId).orElseThrow())
+                .map(opcion -> opcion.getAreaInteres().getId())
+                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+
+        // 2. Normalizar los puntajes para el gráfico (0-100)
+        long maxPuntaje = conteoAreas.values().stream().max(Long::compareTo).orElse(1L);
+        Map<String, Integer> puntajesNormalizados = new HashMap<>();
+        conteoAreas.forEach((area, puntaje) -> {
+            puntajesNormalizados.put(area, (int) ((puntaje * 100) / maxPuntaje));
+        });
+
+        GraficoInteresDTO graficoDTO = new GraficoInteresDTO();
+        graficoDTO.setPuntajes(puntajesNormalizados);
+
+        // 3. Obtener el código de 3 letras del perfil del usuario (ej. "IEC")
+        String perfilUsuario = conteoAreas.entrySet().stream()
+                .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+                .limit(3)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.joining());
+
+        // 4. Calcular compatibilidad y generar el ranking de carreras
+        List<Carrera> todasLasCarreras = carreraRepository.findAll();
+        List<CarreraRankingDTO> ranking = todasLasCarreras.stream().map(carrera -> {
+                    int compatibilidad = calcularCompatibilidad(perfilUsuario, carrera.getPerfilRiasec());
+
+                    CarreraRankingDTO dto = new CarreraRankingDTO();
+                    dto.setId(carrera.getId());
+                    dto.setNombre(carrera.getNombre());
+                    dto.setDescripcionCorta(carrera.getDescripcion());
+                    dto.setCompatibilidad(compatibilidad);
+                    dto.setTagPrincipal(carrera.getPerfilRiasec()); // Usamos el perfil como tag principal
+                    return dto;
+                })
+                .sorted(Comparator.comparingInt(CarreraRankingDTO::getCompatibilidad).reversed())
+                .limit(5) // Limitar al Top 5
+                .collect(Collectors.toList());
+
+        // 5. Ensamblar el DTO de resultado final
+        ResultadoTestDTO resultadoFinal = new ResultadoTestDTO();
+        resultadoFinal.setGraficoIntereses(graficoDTO);
+        resultadoFinal.setRankingCarreras(ranking);
+
+        return resultadoFinal;
+    }
+
+    private int calcularCompatibilidad(String perfilUsuario, String perfilCarrera) {
+        if (perfilCarrera == null || perfilCarrera.isEmpty()) return 0;
+        int score = 0;
+        for (int i = 0; i < perfilUsuario.length(); i++) {
+            char letraUsuario = perfilUsuario.charAt(i);
+            int indexEnCarrera = perfilCarrera.indexOf(letraUsuario);
+            if (indexEnCarrera != -1) {
+                score += (3 - indexEnCarrera);
+            }
+        }
+        return Math.min(100, (score * 15) + new Random().nextInt(10) + 35);
     }
 
     private PreguntaDTO convertirAPreguntaDTO(Pregunta pregunta) {

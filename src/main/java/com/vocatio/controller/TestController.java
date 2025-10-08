@@ -2,6 +2,7 @@ package com.vocatio.controller;
 
 import com.vocatio.dto.request.SubmitAnswerRequestDTO;
 import com.vocatio.dto.response.PreguntaDTO;
+import com.vocatio.dto.response.ResultadoTestDTO;
 import com.vocatio.dto.response.StartTestResponseDTO;
 import com.vocatio.service.TestService;
 import org.springframework.http.ResponseEntity;
@@ -27,12 +28,23 @@ public class TestController {
     public ResponseEntity<PreguntaDTO> submitAnswer(
             @PathVariable Long sessionId,
             @RequestBody SubmitAnswerRequestDTO answerRequest) {
-        PreguntaDTO nextQuestion = testService.submitAnswerAndGetNext(sessionId, answerRequest);
+
+        PreguntaDTO nextQuestion = testService.submitAnswerAndGetNext(
+                sessionId,
+                answerRequest.getPreguntaId(),
+                answerRequest.getOpcionId()
+        );
 
         if (nextQuestion != null) {
             return ResponseEntity.ok(nextQuestion);
         } else {
             return ResponseEntity.ok().build();
         }
+    }
+
+    @GetMapping("/sessions/{sessionId}/results")
+    public ResponseEntity<ResultadoTestDTO> getTestResults(@PathVariable Long sessionId) {
+        ResultadoTestDTO resultados = testService.getTestResults(sessionId);
+        return ResponseEntity.ok(resultados);
     }
 }
