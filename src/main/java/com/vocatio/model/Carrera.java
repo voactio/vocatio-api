@@ -1,49 +1,45 @@
 package com.vocatio.model;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(name = "carreras")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Carrera {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 150)
+    @Column(name = "nombre", nullable = false, length = 150)
     private String nombre;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(name = "descripcion", columnDefinition = "TEXT")
     private String descripcion;
 
-    @Column(name = "duracion_anios")
+    @Column(name = "duracion_anios", nullable = false)
     private Integer duracionAnios;
 
-    @Column(length = 50)
+    @Column(name = "modalidad", length = 50)
     private String modalidad;
 
-    public Carrera() {}
+    @Column(name = "rango_salario_promedio")
+    private String rangoSalarioPromedio;
 
-    public Carrera(String nombre, String descripcion, Integer duracionAnios, String modalidad) {
-        this.nombre = nombre;
-        this.descripcion = descripcion;
-        this.duracionAnios = duracionAnios;
-        this.modalidad = modalidad;
-    }
-
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-
-    public String getNombre() { return nombre; }
-    public void setNombre(String nombre) { this.nombre = nombre; }
-
-    public String getDescripcion() { return descripcion; }
-    public void setDescripcion(String descripcion) { this.descripcion = descripcion; }
-
-    public Integer getDuracionAnios() { return duracionAnios; }
-    public void setDuracionAnios(Integer duracionAnios) { this.duracionAnios = duracionAnios; }
-
-    public String getModalidad() { return modalidad; }
-    public void setModalidad(String modalidad) { this.modalidad = modalidad; }
+    @Column(name = "perfil_riasec")
+    private String perfilRiasec;
 }
-
