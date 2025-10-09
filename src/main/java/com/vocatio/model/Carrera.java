@@ -8,7 +8,7 @@ import lombok.Data;
 @Data
 public class Carrera {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    //@GeneratedValue(strategy = GenerationType.IDENTITY) //si no funciona, quitar el comentado
     private Long id;
 
     @Column(nullable = false)
