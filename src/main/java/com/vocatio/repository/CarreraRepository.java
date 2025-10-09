@@ -9,10 +9,11 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface CarreraRepository extends JpaRepository<Carrera, Long> {
 
-    // Método de la rama feature/listado-de-carreras para soportar la paginación y listado (Funcionalidad 1A).
     Page<Carrera> findAll(Pageable pageable);
-    
-    // NOTA: Si implementaste métodos de filtrado con convenciones de Spring Data JPA (ej. findByDuracionAnios),
-    // deberían estar aquí. Si no se vieron en el conflicto, significa que se unificaron automáticamente
-    // o que no se habían añadido aún.
+
+    Page<Carrera> findByDuracionAnios(Integer duracionAnios, Pageable pageable);
+
+    Page<Carrera> findByModalidadIgnoreCase(String modalidad, Pageable pageable);
+
+    Page<Carrera> findByDuracionAniosAndModalidadIgnoreCase(Integer duracionAnios, String modalidad, Pageable pageable);
 }

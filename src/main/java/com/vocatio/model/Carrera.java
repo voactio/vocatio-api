@@ -1,6 +1,11 @@
 package com.vocatio.model;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -8,7 +13,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "carreras") // UNIFICADO: Usaremos 'carreras' como el nombre de tabla.
+@Table(name = "carreras")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -20,17 +25,16 @@ public class Carrera {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "nombre", nullable = false, length = 150) // Mantenemos el mapeo explícito
+    @Column(name = "nombre", nullable = false, length = 150)
     private String nombre;
 
-    @Column(name = "descripcion", columnDefinition = "TEXT") // Mantenemos el mapeo explícito
+    @Column(name = "descripcion", columnDefinition = "TEXT")
     private String descripcion;
 
-    // CAMBIOS AGREGADOS DE 'DEVELOP'
     @Column(name = "duracion_anios", nullable = false)
-    private int duracionAnios;
+    private Integer duracionAnios;
 
-    @Column(name = "modalidad")
+    @Column(name = "modalidad", length = 50)
     private String modalidad;
 
     @Column(name = "rango_salario_promedio")
@@ -38,9 +42,4 @@ public class Carrera {
 
     @Column(name = "perfil_riasec")
     private String perfilRiasec;
-
-    // NOTA: Cuando implementaste el detalle de carrera, agregaste más campos a esta entidad.
-    // Asumo que esos campos (planEstudios, universidadesSugeridas) estaban en otra rama.
-    // Si esos campos no están aquí, recuerda que tendrás que agregarlos manualmente después
-    // de este merge para que la funcionalidad de detalle de carrera esté completa.
 }
