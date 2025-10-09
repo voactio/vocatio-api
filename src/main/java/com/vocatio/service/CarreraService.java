@@ -1,9 +1,11 @@
 package com.vocatio.service;
 
+import com.vocatio.dto.CarreraDetailDTO;
 import com.vocatio.dto.CarreraResponseDTO;
 import org.springframework.data.domain.Page;
 
 public interface CarreraService {
-    Page<CarreraResponseDTO> obtenerListadoPaginado(Integer page, Integer limit, Integer duracion, String modalidad);
-}
+    CarreraDetailDTO obtenerDetalleCarrera(Long carreraId);
 
+    Page<CarreraResponseDTO> obtenerListadoPaginado(int page, int limit, Integer duracion, String modalidad);
+}
