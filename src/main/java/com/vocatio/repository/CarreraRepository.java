@@ -1,19 +1,59 @@
-package com.vocatio.repository;
+package com.vocatio.model;
 
-import com.vocatio.model.Carrera;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Table;
+import java.util.ArrayList;
+import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-@Repository
-public interface CarreraRepository extends JpaRepository<Carrera, Long> {
+@Entity
+@Table(name = "carreras")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Carrera {
 
-    Page<Carrera> findAll(Pageable pageable);
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    Page<Carrera> findByDuracionAnios(Integer duracionAnios, Pageable pageable);
+    @Column(name = "nombre", nullable = false, length = 150)
+    private String nombre;
 
-    Page<Carrera> findByModalidadIgnoreCase(String modalidad, Pageable pageable);
+    @Column(name = "descripcion", columnDefinition = "TEXT")
+    private String descripcion;
 
-    Page<Carrera> findByDuracionAniosAndModalidadIgnoreCase(Integer duracionAnios, String modalidad, Pageable pageable);
+    @Column(name = "duracion_anios", nullable = false)
+    private Integer duracionAnios;
+
+    @Column(name = "modalidad", length = 50)
+    private String modalidad;
+
+    @Column(name = "plan_estudios", columnDefinition = "TEXT")
+    private String planEstudios;
+
+    @Column(name = "rango_salario_promedio")
+    private String rangoSalarioPromedio;
+
+    @Column(name = "perfil_riasec")
+    private String perfilRiasec;
+
+    @ElementCollection
+    @CollectionTable(name = "carrera_universidades", joinColumns = @JoinColumn(name = "carrera_id"))
+    @Column(name = "universidad", length = 200)
+    @Builder.Default
+    private List<String> universidadesSugeridas = new ArrayList<>();
 }

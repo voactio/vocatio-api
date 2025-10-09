@@ -33,14 +33,14 @@ public class Carrera {
     @Column(name = "nombre", nullable = false, length = 150)
     private String nombre;
 
+    @Column(name = "descripcion", columnDefinition = "TEXT")
+    private String descripcion;
+
     @Column(name = "duracion_anios", nullable = false)
     private Integer duracionAnios;
 
     @Column(name = "modalidad", length = 50)
     private String modalidad;
-
-    @Column(name = "descripcion", columnDefinition = "TEXT")
-    private String descripcion;
 
     @Column(name = "plan_estudios", columnDefinition = "TEXT")
     private String planEstudios;

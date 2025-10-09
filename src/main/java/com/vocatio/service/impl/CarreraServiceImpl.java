@@ -32,12 +32,26 @@ public class CarreraServiceImpl implements CarreraService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<CarreraResponseDTO> obtenerListadoPaginado(int page, int limit) {
+    public Page<CarreraResponseDTO> obtenerListadoPaginado(int page, int limit, Integer duracion, String modalidad) {
         int safePage = Math.max(page, 0);
-        int safeLimit = limit > 0 ? limit : 10;
+        int safeLimit = (limit > 0 && limit <= 200) ? limit : 10;
         Pageable pageable = PageRequest.of(safePage, safeLimit, Sort.by(Sort.Direction.ASC, "nombre"));
-        return carreraRepository.findAll(pageable)
-                .map(this::toDto);
+
+        Page<Carrera> pageResult;
+        boolean hasDuracion = duracion != null;
+        boolean hasModalidad = modalidad != null && !modalidad.isBlank();
+
+        if (hasDuracion && hasModalidad) {
+            pageResult = carreraRepository.findByDuracionAniosAndModalidadIgnoreCase(duracion, modalidad, pageable);
+        } else if (hasDuracion) {
+            pageResult = carreraRepository.findByDuracionAnios(duracion, pageable);
+        } else if (hasModalidad) {
+            pageResult = carreraRepository.findByModalidadIgnoreCase(modalidad, pageable);
+        } else {
+            pageResult = carreraRepository.findAll(pageable);
+        }
+
+        return pageResult.map(this::toDto);
     }
 
     private CarreraDetailDTO mapToDetailDTO(Carrera c) {

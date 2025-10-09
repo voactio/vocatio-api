@@ -33,9 +33,11 @@ public class CarreraController {
     @GetMapping
     public ResponseEntity<Page<CarreraResponseDTO>> listar(
             @RequestParam(name = "page", defaultValue = "0") int page,
-            @RequestParam(name = "limit", defaultValue = "10") int limit
+            @RequestParam(name = "limit", defaultValue = "10") int limit,
+            @RequestParam(name = "duracion", required = false) Integer duracion,
+            @RequestParam(name = "modalidad", required = false) String modalidad
     ) {
-        return ResponseEntity.ok(carreraService.obtenerListadoPaginado(page, limit));
+        return ResponseEntity.ok(carreraService.obtenerListadoPaginado(page, limit, duracion, modalidad));
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)

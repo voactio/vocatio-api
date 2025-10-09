@@ -7,5 +7,5 @@ import org.springframework.data.domain.Page;
 public interface CarreraService {
     CarreraDetailDTO obtenerDetalleCarrera(Long carreraId);
 
-    Page<CarreraResponseDTO> obtenerListadoPaginado(int page, int limit);
+    Page<CarreraResponseDTO> obtenerListadoPaginado(int page, int limit, Integer duracion, String modalidad);
 }
