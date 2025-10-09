@@ -1,14 +1,21 @@
 package com.vocatio.controller;
 
 import com.vocatio.dto.CarreraDetailDTO;
+import com.vocatio.dto.CarreraResponseDTO;
 import com.vocatio.exception.ResourceNotFoundException;
 import com.vocatio.service.CarreraService;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/carreras")
+@RequestMapping("/api/carreras")
 public class CarreraController {
 
     private final CarreraService carreraService;
@@ -21,6 +28,14 @@ public class CarreraController {
     public ResponseEntity<CarreraDetailDTO> obtenerDetalle(@PathVariable("id") Long id) {
         CarreraDetailDTO detalle = carreraService.obtenerDetalleCarrera(id);
         return ResponseEntity.ok(detalle);
+    }
+
+    @GetMapping
+    public ResponseEntity<Page<CarreraResponseDTO>> listar(
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "limit", defaultValue = "10") int limit
+    ) {
+        return ResponseEntity.ok(carreraService.obtenerListadoPaginado(page, limit));
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)
