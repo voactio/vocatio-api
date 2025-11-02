@@ -1,4 +1,3 @@
-// src/main/java/com/vocatio/model/Carrera.java
 package com.vocatio.model;
 
 import jakarta.persistence.*;
@@ -23,6 +22,10 @@ public class Carrera {
 
     @Column(nullable = false, length = 100)
     private String modalidad;
+
+    // Nuevo: área/interés RIASEC (opcional)
+    @Column(name = "perfil_riasec", length = 50)
+    private String perfilRiasec;
 
     @Column(name = "rango_salario_promedio", length = 100)
     private String rangoSalarioPromedio;
@@ -54,6 +57,10 @@ public class Carrera {
     public void setDuracionAnios(Integer duracionAnios) { this.duracionAnios = duracionAnios; }
     public String getModalidad() { return modalidad; }
     public void setModalidad(String modalidad) { this.modalidad = modalidad; }
+
+    public String getPerfilRiasec() { return perfilRiasec; }
+    public void setPerfilRiasec(String perfilRiasec) { this.perfilRiasec = perfilRiasec; }
+
     public String getRangoSalarioPromedio() { return rangoSalarioPromedio; }
     public void setRangoSalarioPromedio(String rangoSalarioPromedio) { this.rangoSalarioPromedio = rangoSalarioPromedio; }
     public LocalDateTime getCreadoEn() { return creadoEn; }
