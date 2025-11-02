@@ -1,43 +1,50 @@
+// src/main/java/com/vocatio/model/Testimonio.java
 package com.vocatio.model;
 
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "testimonios")
 public class Testimonio {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(length = 64)
+    private String id;
 
-    @Column(nullable = false, columnDefinition = "TEXT")
-    private String contenido;
-
-    @Column(nullable = false, length = 120)
-    private String nombreAutor;
-
-    @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "carrera_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "id_carrera", nullable = false)
     private Carrera carrera;
 
-    public Testimonio() {}
+    @Column(name = "id_usuario", nullable = false, length = 64)
+    private String idUsuario;
 
-    public Testimonio(String contenido, String nombreAutor, Carrera carrera) {
-        this.contenido = contenido;
-        this.nombreAutor = nombreAutor;
-        this.carrera = carrera;
+    @Column(name = "texto_testimonio", nullable = false, columnDefinition = "TEXT")
+    private String textoTestimonio;
+
+    @Column(nullable = false)
+    private boolean aprobado;
+
+    @Column(name = "creado_en", updatable = false)
+    private LocalDateTime creadoEn;
+
+    @PrePersist
+    public void prePersist() {
+        if (this.id == null || this.id.isBlank()) {
+            this.id = UUID.randomUUID().toString();
+        }
+        this.creadoEn = LocalDateTime.now();
     }
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-
-    public String getContenido() { return contenido; }
-    public void setContenido(String contenido) { this.contenido = contenido; }
-
-    public String getNombreAutor() { return nombreAutor; }
-    public void setNombreAutor(String nombreAutor) { this.nombreAutor = nombreAutor; }
-
+    public String getId() { return id; }
     public Carrera getCarrera() { return carrera; }
     public void setCarrera(Carrera carrera) { this.carrera = carrera; }
+    public String getIdUsuario() { return idUsuario; }
+    public void setIdUsuario(String idUsuario) { this.idUsuario = idUsuario; }
+    public String getTextoTestimonio() { return textoTestimonio; }
+    public void setTextoTestimonio(String textoTestimonio) { this.textoTestimonio = textoTestimonio; }
+    public boolean isAprobado() { return aprobado; }
+    public void setAprobado(boolean aprobado) { this.aprobado = aprobado; }
+    public LocalDateTime getCreadoEn() { return creadoEn; }
 }
-

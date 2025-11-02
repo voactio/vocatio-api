@@ -1,16 +1,15 @@
+// src/main/java/com/vocatio/controller/TestimonioController.java
 package com.vocatio.controller;
 
+import com.vocatio.dto.response.TestimonioResponse;
 import com.vocatio.service.TestimonioService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/carreras")
+@RequestMapping("/carreras/{carreraId}/testimonios")
 public class TestimonioController {
 
     private final TestimonioService testimonioService;
@@ -19,10 +18,8 @@ public class TestimonioController {
         this.testimonioService = testimonioService;
     }
 
-    @GetMapping("/{carreraId}/testimonios")
-    public ResponseEntity<List<TestimonioResponseDTO>> listarPorCarrera(@PathVariable("carreraId") Long carreraId) {
-        List<TestimonioResponseDTO> resultado = testimonioService.obtenerTestimoniosPorCarrera(carreraId);
-        return ResponseEntity.ok(resultado);
+    @GetMapping
+    public ResponseEntity<List<TestimonioResponse>> listar(@PathVariable Long carreraId) {
+        return ResponseEntity.ok(testimonioService.obtenerAprobadosPorCarrera(carreraId));
     }
 }
-

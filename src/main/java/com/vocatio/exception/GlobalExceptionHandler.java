@@ -1,3 +1,4 @@
+// java
 package com.vocatio.exception;
 
 import com.vocatio.dto.response.ErrorResponse;
@@ -14,7 +15,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(NoResultsException.class)
     public ResponseEntity<ErrorResponse> handleNoResults(NoResultsException ex) {
-        // 428 Precondition Required, según tu especificación
+        // 428 Precondition Required
         return ResponseEntity.status(428)
                 .body(new ErrorResponse("NO_RESULTS", ex.getMessage()));
     }
@@ -28,19 +29,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<?> handleValidationErrors(MethodArgumentNotValidException ex){
         Map<String, String> errors = new HashMap<>();
-        ex.getBindingResult().getFieldErrors().forEach(err -> errors.put(err.getField(), err.getDefaultMessage()));
+        ex.getBindingResult().getFieldErrors()
+                .forEach(err -> errors.put(err.getField(), err.getDefaultMessage()));
         return ResponseEntity.badRequest().body(errors);
     }
-    // 400 - reglas de negocio (IDs repetidos, cantidad != 2, ID no numérico, etc.)
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<?> handleBadRequest(IllegalArgumentException ex){
-        return ResponseEntity.badRequest().body(Map.of(
-                "error", "BAD_REQUEST",
-                "message", ex.getMessage()
-        ));
-    }
 
-    // 404 - no encontrado (carrera inexistente)
+    // 404 - no encontrado
     @ExceptionHandler(ResourceNorFoundException.class)
     public ResponseEntity<?> handleNotFound(ResourceNorFoundException ex){
         return ResponseEntity.status(404).body(Map.of(
