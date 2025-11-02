@@ -1,4 +1,4 @@
-// ...existing code...
+// java
 package com.vocatio.config;
 
 import com.vocatio.model.Carrera;
@@ -28,86 +28,16 @@ public class DataSeeder {
         return args -> {
             if (carreraRepository.count() == 0) {
                 List<Carrera> carreras = List.of(
-                        Carrera.builder()
-                                .nombre("Ingeniería de Sistemas")
-                                .descripcion("Diseño y desarrollo de software y sistemas informáticos.")
-                                .duracionAnios(5)
-                                .modalidad("Presencial")
-                                .rangoSalarioPromedio("Alto")
-                                .perfilRiasec("Investigador")
-                                .build(),
-                        Carrera.builder()
-                                .nombre("Medicina")
-                                .descripcion("Formación para el diagnóstico y tratamiento de enfermedades.")
-                                .duracionAnios(6)
-                                .modalidad("Presencial")
-                                .rangoSalarioPromedio("Alto")
-                                .perfilRiasec("Social")
-                                .build(),
-                        Carrera.builder()
-                                .nombre("Derecho")
-                                .descripcion("Estudio del ordenamiento jurídico y su aplicación.")
-                                .duracionAnios(5)
-                                .modalidad("Presencial")
-                                .rangoSalarioPromedio("Medio-Alto")
-                                .perfilRiasec("Emprendedor")
-                                .build(),
-                        Carrera.builder()
-                                .nombre("Arquitectura")
-                                .descripcion("Diseño y construcción de espacios habitables.")
-                                .duracionAnios(5)
-                                .modalidad("Híbrido")
-                                .rangoSalarioPromedio("Medio")
-                                .perfilRiasec("Artístico")
-                                .build(),
-                        Carrera.builder()
-                                .nombre("Psicología")
-                                .descripcion("Ciencia del comportamiento humano.")
-                                .duracionAnios(5)
-                                .modalidad("Presencial")
-                                .rangoSalarioPromedio("Medio")
-                                .perfilRiasec("Social")
-                                .build(),
-                        Carrera.builder()
-                                .nombre("Administración de Empresas")
-                                .descripcion("Gestión de organizaciones.")
-                                .duracionAnios(4)
-                                .modalidad("Virtual")
-                                .rangoSalarioPromedio("Alto")
-                                .perfilRiasec("Emprendedor")
-                                .build(),
-                        Carrera.builder()
-                                .nombre("Contabilidad")
-                                .descripcion("Registro y análisis de la información financiera.")
-                                .duracionAnios(4)
-                                .modalidad("Virtual")
-                                .rangoSalarioPromedio("Medio")
-                                .perfilRiasec("Convencional")
-                                .build(),
-                        Carrera.builder()
-                                .nombre("Ingeniería Civil")
-                                .descripcion("Diseño y construcción de infraestructura.")
-                                .duracionAnios(5)
-                                .modalidad("Presencial")
-                                .rangoSalarioPromedio("Medio-Alto")
-                                .perfilRiasec("Realista")
-                                .build(),
-                        Carrera.builder()
-                                .nombre("Diseño Gráfico")
-                                .descripcion("Comunicación visual.")
-                                .duracionAnios(3)
-                                .modalidad("Híbrido")
-                                .rangoSalarioPromedio("Bajo-Medio")
-                                .perfilRiasec("Artístico")
-                                .build(),
-                        Carrera.builder()
-                                .nombre("Marketing")
-                                .descripcion("Estrategias comerciales.")
-                                .duracionAnios(4)
-                                .modalidad("Virtual")
-                                .rangoSalarioPromedio("Medio-Alto")
-                                .perfilRiasec("Emprendedor")
-                                .build()
+                        nuevaCarrera("Ingeniería de Sistemas", "Diseño y desarrollo de software y sistemas informáticos.", 5, "Presencial", "Alto", "Investigador"),
+                        nuevaCarrera("Medicina", "Formación para el diagnóstico y tratamiento de enfermedades.", 6, "Presencial", "Alto", "Social"),
+                        nuevaCarrera("Derecho", "Estudio del ordenamiento jurídico y su aplicación.", 5, "Presencial", "Medio-Alto", "Emprendedor"),
+                        nuevaCarrera("Arquitectura", "Diseño y construcción de espacios habitables.", 5, "Híbrido", "Medio", "Artístico"),
+                        nuevaCarrera("Psicología", "Ciencia del comportamiento humano.", 5, "Presencial", "Medio", "Social"),
+                        nuevaCarrera("Administración de Empresas", "Gestión de organizaciones.", 4, "Virtual", "Alto", "Emprendedor"),
+                        nuevaCarrera("Contabilidad", "Registro y análisis de la información financiera.", 4, "Virtual", "Medio", "Convencional"),
+                        nuevaCarrera("Ingeniería Civil", "Diseño y construcción de infraestructura.", 5, "Presencial", "Medio-Alto", "Realista"),
+                        nuevaCarrera("Diseño Gráfico", "Comunicación visual.", 3, "Híbrido", "Bajo-Medio", "Artístico"),
+                        nuevaCarrera("Marketing", "Estrategias comerciales.", 4, "Virtual", "Medio-Alto", "Emprendedor")
                 );
                 carreraRepository.saveAll(carreras);
             }
@@ -116,23 +46,42 @@ public class DataSeeder {
                 List<Carrera> allCarreras = carreraRepository.findAll();
                 if (!allCarreras.isEmpty()) {
                     Carrera sis = allCarreras.stream()
-                            .filter(c -> c.getNombre().contains("Sistemas"))
+                            .filter(c -> c.getNombre() != null && c.getNombre().contains("Sistemas"))
                             .findFirst()
                             .orElse(allCarreras.get(0));
                     Carrera adm = allCarreras.stream()
-                            .filter(c -> c.getNombre().contains("Administración"))
+                            .filter(c -> c.getNombre() != null && c.getNombre().contains("Administración"))
                             .findFirst()
                             .orElse(allCarreras.get(0));
 
                     List<Testimonio> testimonios = List.of(
-                            new Testimonio("Excelente malla y profesores muy capacitados.", "Ana Pérez", sis),
-                            new Testimonio("Me ayudó a conseguir mi primer trabajo en tech.", "Luis Gómez", sis),
-                            new Testimonio("La modalidad virtual facilita estudiar y trabajar.", "María López", adm)
+                            nuevoTestimonio("Excelente malla y profesores muy capacitados.", "ana.perez", sis),
+                            nuevoTestimonio("Me ayudó a conseguir mi primer trabajo en tech.", "luis.gomez", sis),
+                            nuevoTestimonio("La modalidad virtual facilita estudiar y trabajar.", "maria.lopez", adm)
                     );
                     testimonioRepository.saveAll(testimonios);
                 }
             }
         };
     }
+
+    private Carrera nuevaCarrera(String nombre, String descripcion, int duracion, String modalidad, String salario, String perfil) {
+        Carrera c = new Carrera();
+        c.setNombre(nombre);
+        c.setDescripcion(descripcion);
+        c.setDuracionAnios(duracion);
+        c.setModalidad(modalidad);
+        c.setRangoSalarioPromedio(salario);
+        c.setPerfilRiasec(perfil);
+        return c;
+    }
+
+    private Testimonio nuevoTestimonio(String texto, String idUsuario, Carrera carrera) {
+        Testimonio t = new Testimonio();
+        t.setTextoTestimonio(texto);
+        t.setIdUsuario(idUsuario);
+        t.setCarrera(carrera);
+        t.setAprobado(true);
+        return t;
+    }
 }
-// ...existing code...
