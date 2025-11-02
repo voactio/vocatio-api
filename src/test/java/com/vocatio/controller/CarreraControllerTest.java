@@ -1,6 +1,5 @@
 package com.vocatio.controller;
 
-import com.vocatio.dto.CarreraResponseDTO;
 import com.vocatio.service.CarreraService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

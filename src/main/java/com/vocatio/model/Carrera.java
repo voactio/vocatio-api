@@ -1,59 +1,61 @@
+// src/main/java/com/vocatio/model/Carrera.java
 package com.vocatio.model;
 
-import jakarta.persistence.CollectionTable;
-import jakarta.persistence.Column;
-import jakarta.persistence.ElementCollection;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Table;
-import java.util.ArrayList;
-import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import jakarta.persistence.*;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "carreras")
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class Carrera {
 
     @Id
-    //@GeneratedValue(strategy = GenerationType.IDENTITY) //si no funciona, quitar el comentado
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "nombre", nullable = false, length = 150)
+    @Column(nullable = false, length = 255)
     private String nombre;
 
-    @Column(name = "descripcion", columnDefinition = "TEXT")
+    @Column(columnDefinition = "TEXT")
     private String descripcion;
 
     @Column(name = "duracion_anios", nullable = false)
     private Integer duracionAnios;
 
-    @Column(name = "modalidad", length = 50)
+    @Column(nullable = false, length = 100)
     private String modalidad;
 
-    @Column(name = "plan_estudios", columnDefinition = "TEXT")
-    private String planEstudios;
-
-    @Column(name = "rango_salario_promedio")
+    @Column(name = "rango_salario_promedio", length = 100)
     private String rangoSalarioPromedio;
 
-    @Column(name = "perfil_riasec")
-    private String perfilRiasec;
+    @Column(name = "creado_en", updatable = false)
+    private LocalDateTime creadoEn;
 
-    @ElementCollection
-    @CollectionTable(name = "carrera_universidades", joinColumns = @JoinColumn(name = "carrera_id"))
-    @Column(name = "universidad", length = 200)
-    @Builder.Default
-    private List<String> universidadesSugeridas = new ArrayList<>();
+    @Column(name = "actualizado_en")
+    private LocalDateTime actualizadoEn;
+
+    @PrePersist
+    public void prePersist() {
+        LocalDateTime now = LocalDateTime.now();
+        this.creadoEn = now;
+        this.actualizadoEn = now;
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        this.actualizadoEn = LocalDateTime.now();
+    }
+
+    public Long getId() { return id; }
+    public String getNombre() { return nombre; }
+    public void setNombre(String nombre) { this.nombre = nombre; }
+    public String getDescripcion() { return descripcion; }
+    public void setDescripcion(String descripcion) { this.descripcion = descripcion; }
+    public Integer getDuracionAnios() { return duracionAnios; }
+    public void setDuracionAnios(Integer duracionAnios) { this.duracionAnios = duracionAnios; }
+    public String getModalidad() { return modalidad; }
+    public void setModalidad(String modalidad) { this.modalidad = modalidad; }
+    public String getRangoSalarioPromedio() { return rangoSalarioPromedio; }
+    public void setRangoSalarioPromedio(String rangoSalarioPromedio) { this.rangoSalarioPromedio = rangoSalarioPromedio; }
+    public LocalDateTime getCreadoEn() { return creadoEn; }
+    public LocalDateTime getActualizadoEn() { return actualizadoEn; }
 }

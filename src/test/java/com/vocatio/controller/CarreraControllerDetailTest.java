@@ -1,6 +1,5 @@
 package com.vocatio.controller;
 
-import com.vocatio.dto.CarreraDetailDTO;
 import com.vocatio.exception.ResourceNotFoundException;
 import com.vocatio.service.CarreraService;
 import org.junit.jupiter.api.Test;

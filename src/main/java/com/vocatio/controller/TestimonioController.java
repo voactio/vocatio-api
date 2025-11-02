@@ -1,6 +1,5 @@
 package com.vocatio.controller;
 
-import com.vocatio.dto.TestimonioResponseDTO;
 import com.vocatio.service.TestimonioService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;

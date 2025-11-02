@@ -1,6 +1,5 @@
 package com.vocatio.controller;
 
-import com.vocatio.dto.TestimonioResponseDTO;
 import com.vocatio.service.TestimonioService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
