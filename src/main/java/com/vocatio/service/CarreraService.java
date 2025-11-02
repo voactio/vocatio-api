@@ -1,11 +1,34 @@
+// src/main/java/com/vocatio/service/CarreraService.java
 package com.vocatio.service;
 
-import com.vocatio.dto.CarreraDetailDTO;
-import com.vocatio.dto.CarreraResponseDTO;
-import org.springframework.data.domain.Page;
+import com.vocatio.dto.response.CarreraDetailResponse;
+import com.vocatio.model.Carrera;
+import com.vocatio.repository.CarreraRepository;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
-public interface CarreraService {
-    CarreraDetailDTO obtenerDetalleCarrera(Long carreraId);
+@Service
+public class CarreraService {
 
-    Page<CarreraResponseDTO> obtenerListadoPaginado(int page, int limit, Integer duracion, String modalidad);
+    private final CarreraRepository carreraRepository;
+
+    public CarreraService(CarreraRepository carreraRepository) {
+        this.carreraRepository = carreraRepository;
+    }
+
+    public CarreraDetailResponse obtenerDetalleCarrera(Long carreraId) {
+        Carrera c = carreraRepository.findById(carreraId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Carrera no encontrada"));
+        return new CarreraDetailResponse(
+                c.getId(),
+                c.getNombre(),
+                c.getDescripcion(),
+                c.getDuracionAnios(),
+                c.getModalidad(),
+                c.getRangoSalarioPromedio(),
+                c.getCreadoEn(),
+                c.getActualizadoEn()
+        );
+    }
 }
