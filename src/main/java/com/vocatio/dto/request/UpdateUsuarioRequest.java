@@ -25,7 +25,7 @@ public class UpdateUsuarioRequest {
 
     // Campos no obligatorios
 
-    private  String carreraActual;
+    private  Long carreraId;
 
     private String urlImagenPerfil;
 

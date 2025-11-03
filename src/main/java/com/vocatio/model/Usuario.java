@@ -33,7 +33,9 @@ public class Usuario {
 
     private String nivelEducativo;
 
-    private String carreraActual;
+    @ManyToOne
+    @JoinColumn(name = "carrera_id", nullable = true)
+    private Carrera carrera;
 
     private String urlImagenPerfil;
 

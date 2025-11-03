@@ -31,7 +31,7 @@ public class RegisterUsuarioRequest {
     private String nivelEducativo;
 
     // Campos opcionales
-    private String carreraActual;
+    private Long carreraId;
 
     private String urlImagenPerfil;
 }

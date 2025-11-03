@@ -4,6 +4,7 @@ import com.vocatio.dto.request.LoginRequest;
 import com.vocatio.dto.request.RegisterUsuarioRequest;
 import com.vocatio.dto.request.UpdateUsuarioRequest;
 import com.vocatio.model.Usuario;
+import com.vocatio.repository.CarreraRepository;
 import com.vocatio.repository.UsuarioRepository;
 import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.http.HttpStatus;
@@ -21,9 +22,11 @@ import java.util.UUID;
 public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
+    private final CarreraRepository carreraRepository;
 
-    public UsuarioService(UsuarioRepository usuarioRepository) {
+    public UsuarioService(UsuarioRepository usuarioRepository, CarreraRepository carreraRepository) {
         this.usuarioRepository = usuarioRepository;
+        this.carreraRepository = carreraRepository;
     }
 
     // FUNCIONALIDAD 1 - REGISTRARSE
@@ -37,8 +40,13 @@ public class UsuarioService {
         user.setCorreo(request.getCorreo());
         user.setContrasena(BCrypt.hashpw(request.getContrasena(), BCrypt.gensalt()));
         user.setNivelEducativo(request.getNivelEducativo());
-        user.setCarreraActual(request.getCarreraActual());
         user.setUrlImagenPerfil(request.getUrlImagenPerfil());
+        if(request.getCarreraId() != null){
+            user.setCarrera(
+                    carreraRepository.findById(request.getCarreraId())
+                            .orElseThrow(()->new ResponseStatusException(HttpStatus.NOT_FOUND, "Carrera no encontrada"))
+            );
+        }
 
         return usuarioRepository.save(user);
     }
@@ -59,8 +67,11 @@ public class UsuarioService {
         }
         user.setNivelEducativo(request.getNivelEducativo());
 
-        if (request.getCarreraActual() != null) {
-            user.setCarreraActual(request.getCarreraActual());
+        if (request.getCarreraId() != null) {
+            user.setCarrera(
+                    carreraRepository.findById(request.getCarreraId())
+                            .orElseThrow(()->new ResponseStatusException(HttpStatus.NOT_FOUND, "Carrera no encontrada"))
+            );
         }
         if (request.getUrlImagenPerfil() != null) {
             user.setUrlImagenPerfil(request.getUrlImagenPerfil());
@@ -94,7 +105,7 @@ public class UsuarioService {
                 "nombre", user.getNombre(),
                 "correo", user.getCorreo(),
                 "nivelEducativo", user.getNivelEducativo(),
-                "carreraActual", user.getCarreraActual()
+                "carreraId", user.getCarrera().getId()
         ));
 
         return response;

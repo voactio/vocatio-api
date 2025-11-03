@@ -49,7 +49,7 @@ public class UsuarioController {
             usuarioM.put("nombre", usuarioModificado.getNombre());
             usuarioM.put("correo", usuarioModificado.getCorreo());
             usuarioM.put("nivelEducativo", usuarioModificado.getNivelEducativo());
-            usuarioM.put("carreraActual", usuarioModificado.getCarreraActual());
+            usuarioM.put("carreraId", usuarioModificado.getCarrera().getId());
             usuarioM.put("urlImagenPerfil",  usuarioModificado.getUrlImagenPerfil());
             usuarioM.put("creadoEn", usuarioModificado.getCreadoEn());
             usuarioM.put("actualizadoEn", usuarioModificado.getActualizadoEn());
