@@ -5,6 +5,7 @@ import com.vocatio.dto.response.CompareCareersResponse;
 import com.vocatio.service.CareerCompareService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -14,6 +15,7 @@ public class CareerCompareController {
 
     private final CareerCompareService careerCompareService;
 
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @PostMapping("/comparar")
     public ResponseEntity<CompareCareersResponse> compararCarreras(
             @RequestBody CompareCareersRequest request

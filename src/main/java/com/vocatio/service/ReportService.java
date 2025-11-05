@@ -29,7 +29,7 @@ public class ReportService {
      * Lee el resultado, cruza con áreas y carreras y devuelve todo listo
      * para pintarlo o para generar el PDF.
      */
-    public GenerateReportResponse obtenerResultadoConRecomendaciones(Long idResultado, Long idUsuario) {
+    public GenerateReportResponse obtenerResultadoConRecomendaciones(Long idResultado, UUID idUsuario) {
         // 1. buscar resultado y validar que sea de ese usuario
         ResultadosTest resultado = resultadoTestRepository
                 .findByIdAndIdUsuario(idResultado, idUsuario)
@@ -158,7 +158,7 @@ public class ReportService {
      * Por ahora devolvemos un PDF falso (bytes) para que el controller no falle.
      * Luego aquí ya metes iText/OpenPDF.
      */
-    public byte[] generarPdfResultado(Long idResultado, Long idUsuario) {
+    public byte[] generarPdfResultado(Long idResultado, UUID idUsuario) {
         // puedes reutilizar el método anterior
         GenerateReportResponse data = obtenerResultadoConRecomendaciones(idResultado, idUsuario);
         String contenido = "Resultado #" + data.getIdResultado() + " - generado desde el servicio.\n";

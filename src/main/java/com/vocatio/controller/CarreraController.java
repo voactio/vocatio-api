@@ -3,6 +3,7 @@ package com.vocatio.controller;
 import com.vocatio.dto.response.CarreraCardResponse;
 import com.vocatio.service.CarreraService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,6 +21,7 @@ public class CarreraController {
     // ... endpoints existentes (detalle, filtros, etc.)
 
     // Listado inicial de fichas (nombre + breve descripción)
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @GetMapping("/listado")
     public ResponseEntity<List<CarreraCardResponse>> listadoInicial(
             @RequestParam(defaultValue = "0") int page,

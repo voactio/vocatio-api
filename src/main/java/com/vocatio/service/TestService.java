@@ -40,7 +40,7 @@ public class TestService {
     }
 
     @Transactional
-    public StartTestResponseDTO iniciarTest(Long testId, Long userId) {
+    public StartTestResponseDTO iniciarTest(Long testId, UUID userId) {
         Usuario usuario = usuarioRepository.findById(userId).orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
         Test test = testRepository.findById(testId).orElseThrow(() -> new RuntimeException("Test no encontrado"));
 

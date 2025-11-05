@@ -8,10 +8,12 @@ import com.vocatio.service.UsuarioService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/usuarios")
@@ -23,18 +25,11 @@ public class UsuarioController {
         this.usuarioService = usuarioService;
     }
 
-    // FUNCIONALIDAD 1 - REGISTRAR NUEVO USUARIO
-    @PostMapping("/register")
-    public ResponseEntity<?> register(@Valid @RequestBody RegisterUsuarioRequest request) {
-        Usuario user = usuarioService.register(request);
-        user.setContrasena(null);
-        return ResponseEntity.status(HttpStatus.CREATED).body(user);
-    }
-
     // FUNCIONALIDAD 2 - MODIFICAR PERFIL
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @PatchMapping("/updPerfil/{id}")
     public ResponseEntity<?> updateUsuario(
-            @PathVariable Long id,
+            @PathVariable UUID id,
             @Valid @RequestBody UpdateUsuarioRequest request){
 
         try {
@@ -65,17 +60,5 @@ public class UsuarioController {
         }
     }
 
-    // FUNCIONALIDAD 3 - INICIAR SESION (LOGIN)
-    @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest request){
-        try{
-            Map<String, Object> response = usuarioService.login(request);
-            return ResponseEntity.ok(response);
-        }catch (IllegalArgumentException e){
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensaje", e.getMessage()));
-        }catch (RuntimeException e){
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("mensaje", e.getMessage()));
-        }
-    }
 }
 

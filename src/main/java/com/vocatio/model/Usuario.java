@@ -8,6 +8,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 //Entidad JPA, es una tabla en BaseDatos
 //  nombre tabla: users
@@ -21,14 +22,15 @@ public class Usuario {
     //Clave primaria
     //  activa automaticamente el autoincremento
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
     private String nombre;
 
     @Column(nullable = false, unique = true)
     private String correo;
 
+    @Column(nullable = false)
     private String contrasena;
 
     private String nivelEducativo;
@@ -45,4 +47,10 @@ public class Usuario {
 
     @UpdateTimestamp
     private LocalDateTime actualizadoEn;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "role_id")
+    private Role role;
+
+    private Boolean active = true;
 }

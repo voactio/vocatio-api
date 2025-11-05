@@ -6,6 +6,8 @@ import com.vocatio.model.Testimonio;
 import com.vocatio.repository.CarreraRepository;
 import com.vocatio.repository.TestimonioRepository;
 import java.util.List;
+import java.util.UUID;
+
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -55,9 +57,9 @@ public class DataSeeder {
                             .orElse(allCarreras.get(0));
 
                     List<Testimonio> testimonios = List.of(
-                            nuevoTestimonio("Excelente malla y profesores muy capacitados.", "ana.perez", sis),
-                            nuevoTestimonio("Me ayudó a conseguir mi primer trabajo en tech.", "luis.gomez", sis),
-                            nuevoTestimonio("La modalidad virtual facilita estudiar y trabajar.", "maria.lopez", adm)
+                            nuevoTestimonio("Excelente malla y profesores muy capacitados.", UUID.fromString("a1b2c3d4-e5f6-7890-ab12-cdef34567890"), sis),
+                            nuevoTestimonio("Me ayudó a conseguir mi primer trabajo en tech.", UUID.fromString("b2c3d4e5-f678-9012-ab34-cdef45678901"), sis),
+                            nuevoTestimonio("La modalidad virtual facilita estudiar y trabajar.", UUID.fromString("c3d4e5f6-7890-1234-ab56-cdef56789012"), adm)
                     );
                     testimonioRepository.saveAll(testimonios);
                 }
@@ -76,7 +78,7 @@ public class DataSeeder {
         return c;
     }
 
-    private Testimonio nuevoTestimonio(String texto, String idUsuario, Carrera carrera) {
+    private Testimonio nuevoTestimonio(String texto, UUID idUsuario, Carrera carrera) {
         Testimonio t = new Testimonio();
         t.setTextoTestimonio(texto);
         t.setIdUsuario(idUsuario);
