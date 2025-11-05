@@ -1,74 +1,58 @@
 package com.vocatio.service;
 
-import com.vocatio.dto.response.PosiblesUniversidades;
-import com.vocatio.dto.response.UniversidadesItemDTO;
+import com.vocatio.dto.request.UniversitiesByCareerRequest;
+import com.vocatio.dto.response.UniversitiesByCareerResponse;
+import com.vocatio.exception.BadRequestException;
+import com.vocatio.exception.ResourceNotFoundException;
+import com.vocatio.model.Carrera;
+import com.vocatio.model.UniversidadCarrera;
 import com.vocatio.repository.CarreraRepository;
 import com.vocatio.repository.UniversidadCarreraRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class UniversidadService {
 
-    private final UniversidadCarreraRepository repo;
-    private final CarreraRepository carreraRepo;
+    private final CarreraRepository carreraRepository;
+    private final UniversidadCarreraRepository universidadCarreraRepository;
 
-    public UniversidadService(UniversidadCarreraRepository repo, CarreraRepository carreraRepo) {
-        this.repo = repo;
-        this.carreraRepo = carreraRepo;
-    }
+    public UniversitiesByCareerResponse obtener(UniversitiesByCareerRequest request) {
 
-    public PosiblesUniversidades getByCareer(Long careerId, int page, int size) {
-        if (page < 1) page = 1;
-        if (size < 1) size = 20;
-
-        // 404 solo si la carrera NO existe
-        if (!carreraRepo.existsById(careerId)) {
-            throw new ResponseStatusException(
-                    HttpStatus.NOT_FOUND, "La carrera " + careerId + " no existe");
+        if (request.getIdCarrera() == null || request.getIdCarrera() <= 0) {
+            throw new BadRequestException("Debes enviar un idCarrera válido.");
         }
 
-        var rows = repo.findOffersByCareer(careerId);
+        Carrera carrera = carreraRepository.findById(request.getIdCarrera())
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró la carrera indicada."));
 
-        // Paginar aunque esté vacío
-        int total = rows.size();
-        int from = Math.min((page - 1) * size, total);
-        int to   = Math.min(from + size, total);
-        var slice = rows.subList(from, to);
+        List<UniversidadCarrera> relaciones = universidadCarreraRepository
+                .findAllByCarrera(request.getIdCarrera());
 
-        List<UniversidadesItemDTO> items = new ArrayList<>(slice.size());
-        for (var r : slice) {
-            var dto = new UniversidadesItemDTO();
-            dto.id = r.getId();
-            dto.name = r.getName();
-            dto.city = r.getCity();
-            dto.programDuration = (r.getProgramDurationYears() != null)
-                    ? r.getProgramDurationYears() + " años" : null;
-            dto.type = r.getType();
-            dto.moreInfoUrl = r.getMoreInfoUrl();
-
-            var t = new UniversidadesItemDTO.Tuition();
-            t.currency = "PEN";
-            if (r.getAnnualCost() != null) {
-                t.approxMonthly = r.getAnnualCost()
-                        .divide(BigDecimal.valueOf(12), 2, RoundingMode.HALF_UP);
-            }
-            dto.tuition = t;
-
-            items.add(dto);
+        if (relaciones.isEmpty()) {
+            throw new ResourceNotFoundException("No hay universidades asociadas a esta carrera.");
         }
 
-        var resp = new PosiblesUniversidades();
-        resp.items = items;   // puede quedar []
-        resp.page = page;
-        resp.size = size;
-        resp.total = total;   // 0 si no hay resultados
-        return resp;
+        var items = relaciones.stream()
+                .map(uc -> UniversitiesByCareerResponse.ItemUniversidad.builder()
+                        .idUniversidad(uc.getUniversidad().getId())
+                        .nombreUniversidad(uc.getUniversidad().getNombre())
+                        .ubicacion(uc.getUniversidad().getUbicacion())
+                        .duracionAnios(carrera.getDuracionAnios())
+                        .costoPorAnio(uc.getCostoPorAnio())
+                        .urlUniversidad(uc.getUniversidad().getUrlSitioWeb())
+                        .urlPlanEspecifico(uc.getUrlPlanEspecifico())
+                        .build()
+                )
+                .toList();
+
+        return UniversitiesByCareerResponse.builder()
+                .idCarrera(carrera.getId())
+                .nombreCarrera(carrera.getNombre())
+                .universidades(items)
+                .build();
     }
 }
