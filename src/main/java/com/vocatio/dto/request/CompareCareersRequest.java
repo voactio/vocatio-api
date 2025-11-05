@@ -1,12 +1,14 @@
 package com.vocatio.dto.request;
 
-import jakarta.validation.constraints.NotNull;
-import java.util.List;
+import lombok.Getter;
+import lombok.Setter;
 
+@Getter
+@Setter
 public class CompareCareersRequest {
-    @NotNull
-    private List<String> careerIds; // vendrán como strings; luego se parsean a Long
 
-    public List<String> getCareerIds() { return careerIds; }
-    public void setCareerIds(List<String> careerIds) { this.careerIds = careerIds; }
+    private Long idUsuario;
+    private Long idResultado;
+    private Long idCarrera1;
+    private Long idCarrera2;
 }

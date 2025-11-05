@@ -9,4 +9,6 @@ import java.util.List;
 public interface CarreraAreaInteresRepository extends JpaRepository<CarreraAreaInteres, CarreraAreaInteresId> {
 
     List<CarreraAreaInteres> findByIdAreaInteresIn(Iterable<Long> idsAreas);
+
+    List<CarreraAreaInteres> findByIdCarrera(Long idCarrera);
 }
