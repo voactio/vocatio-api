@@ -1,39 +1,35 @@
 package com.vocatio.model;
 
 import jakarta.persistence.*;
-import java.time.OffsetDateTime;
-import java.util.UUID;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "resultados_test")
+@Getter
+@Setter
+@Table(name = "resultados_test",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"id_usuario", "id_test", "intento"})
+)
 public class ResultadosTest {
 
     @Id
-    @GeneratedValue
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @Column(name = "id_usuario", nullable = false)
-    private UUID idUsuario;
+    private Long idUsuario;
 
     @Column(name = "id_test", nullable = false)
-    private UUID idTest;
+    private Long idTest;
+
+    @Column(nullable = false)
+    private Integer intento;
 
     @Column(name = "completado_en", nullable = false)
-    private OffsetDateTime completadoEn;
+    private LocalDateTime completadoEn;
 
-    // No necesitamos mapear jsonb para esta funcionalidad.
-    @Column(name = "puntajes")
+    @Column(name = "puntajes", columnDefinition = "jsonb", nullable = false)
     private String puntajes;
-
-    // getters & setters
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-    public UUID getIdUsuario() { return idUsuario; }
-    public void setIdUsuario(UUID idUsuario) { this.idUsuario = idUsuario; }
-    public UUID getIdTest() { return idTest; }
-    public void setIdTest(UUID idTest) { this.idTest = idTest; }
-    public OffsetDateTime getCompletadoEn() { return completadoEn; }
-    public void setCompletadoEn(OffsetDateTime completadoEn) { this.completadoEn = completadoEn; }
-    public String getPuntajes() { return puntajes; }
-    public void setPuntajes(String puntajes) { this.puntajes = puntajes; }
 }

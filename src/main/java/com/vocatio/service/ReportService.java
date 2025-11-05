@@ -2,168 +2,177 @@ package com.vocatio.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.vocatio.model.Report;
-import com.vocatio.model.ResultadosTest;
-import com.vocatio.repository.ReportRepository;
-import com.vocatio.repository.ResultadosTestRepository;
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.pdmodel.PDPage;
-import org.apache.pdfbox.pdmodel.PDPageContentStream;
-import org.apache.pdfbox.pdmodel.common.PDRectangle;
-import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import com.vocatio.dto.response.CarreraAfinDto;
+import com.vocatio.dto.response.GenerateReportResponse;
+import com.vocatio.exception.ResourceNorFoundException;
+import com.vocatio.model.*;
+import com.vocatio.repository.*;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.time.OffsetDateTime;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class ReportService {
 
-    private final ReportRepository reportRepository;
-    private final ResultadosTestRepository resultadosTestRepository;
-    private final ObjectMapper objectMapper;
+    private final ResultadosTestRepository resultadoTestRepository;
+    private final AreaInteresRepository areaInteresRepository;
+    private final CarreraAreaInteresRepository carreraAreaInteresRepository;
+    private final CarreraRepository carreraRepository;
 
-    public ReportService(ReportRepository reportRepository,
-                         ResultadosTestRepository resultadosTestRepository,
-                         ObjectMapper objectMapper) {
-        this.reportRepository = reportRepository;
-        this.resultadosTestRepository = resultadosTestRepository;
-        this.objectMapper = objectMapper;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    /**
+     * Lee el resultado, cruza con áreas y carreras y devuelve todo listo
+     * para pintarlo o para generar el PDF.
+     */
+    public GenerateReportResponse obtenerResultadoConRecomendaciones(Long idResultado, Long idUsuario) {
+        // 1. buscar resultado y validar que sea de ese usuario
+        ResultadosTest resultado = resultadoTestRepository
+                .findByIdAndIdUsuario(idResultado, idUsuario)
+                .orElseThrow(() -> new ResourceNorFoundException("Resultado no encontrado o no pertenece al usuario"));
+
+        // 2. convertir el jsonb a Map<String, Integer>
+        Map<String, Integer> puntajesPorArea = parsearPuntajes(resultado.getPuntajes());
+
+        if (puntajesPorArea.isEmpty()) {
+            return GenerateReportResponse.builder()
+                    .idResultado(resultado.getId())
+                    .completadoEn(resultado.getCompletadoEn())
+                    .puntajes(Collections.emptyMap())
+                    .topCarreras(Collections.emptyList())
+                    .build();
+        }
+
+        // 3. obtener todas las áreas de la BD para mapear nombre -> id
+        List<AreaInteres> todasLasAreas = areaInteresRepository.findAll();
+        Map<String, Long> areaNombreToId = todasLasAreas.stream()
+                .collect(Collectors.toMap(AreaInteres::getNombre, AreaInteres::getId));
+
+        // 4. de los puntajes, quedarnos solo con las áreas que existen en BD
+        Map<Long, Integer> areaIdToPuntaje = new HashMap<>();
+        for (Map.Entry<String, Integer> entry : puntajesPorArea.entrySet()) {
+            String nombreArea = entry.getKey();
+            Integer puntaje = entry.getValue();
+            Long idArea = areaNombreToId.get(nombreArea);
+            if (idArea != null) {
+                areaIdToPuntaje.put(idArea, puntaje);
+            }
+        }
+
+        if (areaIdToPuntaje.isEmpty()) {
+            return GenerateReportResponse.builder()
+                    .idResultado(resultado.getId())
+                    .completadoEn(resultado.getCompletadoEn())
+                    .puntajes(puntajesPorArea)
+                    .topCarreras(Collections.emptyList())
+                    .build();
+        }
+
+        // 5. buscar todas las relaciones carrera-area para esas áreas
+        List<CarreraAreaInteres> relaciones = carreraAreaInteresRepository.findByIdAreaInteresIn(areaIdToPuntaje.keySet());
+
+        // 6. acumular puntaje por carrera
+        //    fórmula muy simple: scoreCarrera += puntajeAreaUsuario * (relevancia o 1)
+        Map<Long, Double> carreraToScore = new HashMap<>();
+        // también guardamos qué área aportó más a esa carrera, para mostrarla
+        Map<Long, Long> carreraToBestArea = new HashMap<>();
+        Map<Long, Integer> carreraToBestAreaScore = new HashMap<>();
+
+        for (CarreraAreaInteres rel : relaciones) {
+            Long idCarrera = rel.getIdCarrera();
+            Long idArea = rel.getIdAreaInteres();
+            Integer puntajeUsuarioEnArea = areaIdToPuntaje.getOrDefault(idArea, 0);
+            int relevancia = rel.getPuntajeRelevancia() != null ? rel.getPuntajeRelevancia() : 1;
+
+            double aporte = puntajeUsuarioEnArea * relevancia;
+
+            carreraToScore.merge(idCarrera, (double) aporte, Double::sum);
+
+            // para guardar el área principal de esa carrera
+            int best = carreraToBestAreaScore.getOrDefault(idCarrera, -1);
+            if (puntajeUsuarioEnArea > best) {
+                carreraToBestArea.put(idCarrera, idArea);
+                carreraToBestAreaScore.put(idCarrera, puntajeUsuarioEnArea);
+            }
+        }
+
+        // 7. traer las carreras que obtuvieron puntaje
+        List<Long> idsCarreras = new ArrayList<>(carreraToScore.keySet());
+        Map<Long, Carrera> carreraMap = carreraRepository.findAllById(idsCarreras)
+                .stream()
+                .collect(Collectors.toMap(Carrera::getId, c -> c));
+
+        // 8. ordenar por score desc y quedarnos con las 5 primeras
+        List<Map.Entry<Long, Double>> topEntries = carreraToScore.entrySet().stream()
+                .sorted((e1, e2) -> Double.compare(e2.getValue(), e1.getValue()))
+                .limit(5)
+                .toList();
+
+        // 9. armar DTO de top carreras
+        List<CarreraAfinDto> topCarreras = new ArrayList<>();
+        // normalizar a porcentaje respecto a la más alta
+        double maxScore = topEntries.isEmpty() ? 0.0 : topEntries.get(0).getValue();
+
+        for (Map.Entry<Long, Double> entry : topEntries) {
+            Long idCarrera = entry.getKey();
+            Double score = entry.getValue();
+            Carrera carrera = carreraMap.get(idCarrera);
+            if (carrera == null) continue;
+
+            Long idAreaPrincipal = carreraToBestArea.get(idCarrera);
+            String nombreArea = null;
+            if (idAreaPrincipal != null) {
+                nombreArea = todasLasAreas.stream()
+                        .filter(a -> a.getId().equals(idAreaPrincipal))
+                        .map(AreaInteres::getNombre)
+                        .findFirst()
+                        .orElse(null);
+            }
+
+            double porcentaje = (maxScore > 0) ? (score / maxScore) * 100.0 : 0.0;
+
+            topCarreras.add(
+                    CarreraAfinDto.builder()
+                            .id(carrera.getId())
+                            .nombre(carrera.getNombre())
+                            .descripcion(carrera.getDescripcion())
+                            .areaInteres(nombreArea)
+                            .porcentajeCompatibilidad(Math.round(porcentaje * 100.0) / 100.0)
+                            .build()
+            );
+        }
+
+        return GenerateReportResponse.builder()
+                .idResultado(resultado.getId())
+                .completadoEn(resultado.getCompletadoEn())
+                .puntajes(puntajesPorArea) // esto es lo que el front puede graficar
+                .topCarreras(topCarreras)
+                .build();
     }
 
-    @Transactional
-    public Report generatePdf(UUID userId, UUID testId) {
-        // 1) Validar que el usuario tenga al menos un resultado
-        Optional<ResultadosTest> last = resultadosTestRepository
-                .findFirstByIdUsuarioOrderByCompletadoEnDesc(userId);
-        if (last.isEmpty()) throw new IllegalStateException("NO_RESULTS");
+    /**
+     * Por ahora devolvemos un PDF falso (bytes) para que el controller no falle.
+     * Luego aquí ya metes iText/OpenPDF.
+     */
+    public byte[] generarPdfResultado(Long idResultado, Long idUsuario) {
+        // puedes reutilizar el método anterior
+        GenerateReportResponse data = obtenerResultadoConRecomendaciones(idResultado, idUsuario);
+        String contenido = "Resultado #" + data.getIdResultado() + " - generado desde el servicio.\n";
+        return contenido.getBytes(StandardCharsets.UTF_8);
+    }
 
+    // =========================
+    // helpers
+    // =========================
+    private Map<String, Integer> parsearPuntajes(String json) {
         try {
-            // 2) Elegir el resultado objetivo: si viene testId úsalo, si no el último
-            Optional<ResultadosTest> target = (testId != null)
-                    ? resultadosTestRepository.findByIdTest(testId)
-                    : last;
-
-            if (target.isEmpty()) throw new IllegalStateException("NO_RESULTS");
-
-            // 3) Parsear puntajes JSONB (String) -> Map<String, Number>
-            Map<String, Number> puntajes = null;
-            String raw = target.get().getPuntajes(); // asegúrate que tu entidad expone String
-            if (raw != null && !raw.isBlank()) {
-                puntajes = objectMapper.readValue(raw, new TypeReference<Map<String, Number>>() {});
-            }
-
-            // 4) Generar PDF válido
-            Path outDir = Path.of("generated-reports");
-            String fileName = "rpt-" + UUID.randomUUID() + ".pdf";
-            Path pdfPath = createPdfReportWithPdfBox(outDir, fileName, userId, testId, puntajes);
-
-            // 5) Persistir metadata del reporte
-            Report r = new Report();
-            r.setUserId(userId);
-            r.setTestId(testId);
-            r.setFilePath(pdfPath.toAbsolutePath().toString());
-            r.setStatus(Report.Status.READY);
-            r.setCreatedAt(OffsetDateTime.now());
-            return reportRepository.save(r);
-
-        } catch (IllegalStateException e) {
-            throw e; // "NO_RESULTS" lo mapea tu controller a 428/400 según tu regla
+            return objectMapper.readValue(json, new TypeReference<Map<String, Integer>>() {});
         } catch (Exception e) {
-            throw new RuntimeException("FAIL_TO_GENERATE_PDF", e);
+            return Collections.emptyMap();
         }
-    }
-
-    @Transactional(readOnly = true)
-    public File getLatestReportFile(UUID userId) {
-        Report rpt = reportRepository.findTopByUserIdOrderByCreatedAtDesc(userId)
-                .orElseThrow(() -> new IllegalStateException("NO_RESULT"));
-        return new File(rpt.getFilePath());
-    }
-
-    // ---------- Helpers ----------
-
-    private Path createPdfReportWithPdfBox(Path outputDir,
-                                           String fileName,
-                                           UUID userId,
-                                           UUID testId,
-                                           Map<String, Number> puntajes) throws Exception {
-        Files.createDirectories(outputDir);
-        Path pdfPath = outputDir.resolve(fileName);
-
-        try (PDDocument doc = new PDDocument()) {
-            PDPage page = new PDPage(PDRectangle.A4);
-            doc.addPage(page);
-
-            try (PDPageContentStream cs = new PDPageContentStream(doc, page)) {
-                float margin = 50f;
-                float y = page.getMediaBox().getHeight() - margin;
-
-                // Título
-                cs.beginText();
-                cs.setFont(PDType1Font.HELVETICA_BOLD, 18);
-                cs.newLineAtOffset(margin, y);
-                cs.showText("Reporte de Resultados — Vocatio");
-                cs.endText();
-                y -= 28f;
-
-                // Metadatos
-                cs.beginText();
-                cs.setFont(PDType1Font.HELVETICA, 12);
-                cs.newLineAtOffset(margin, y);
-                cs.showText("Usuario: " + userId);
-                cs.endText();
-                y -= 16f;
-
-                cs.beginText();
-                cs.setFont(PDType1Font.HELVETICA, 12);
-                cs.newLineAtOffset(margin, y);
-                cs.showText("Test ID: " + (testId != null ? testId : "—"));
-                cs.endText();
-                y -= 20f;
-
-                // Línea divisoria
-                cs.moveTo(margin, y);
-                cs.lineTo(page.getMediaBox().getWidth() - margin, y);
-                cs.stroke();
-                y -= 18f;
-
-                // Puntajes
-                if (puntajes != null && !puntajes.isEmpty()) {
-                    cs.beginText();
-                    cs.setFont(PDType1Font.HELVETICA_BOLD, 12);
-                    cs.newLineAtOffset(margin, y);
-                    cs.showText("Resultados por dimensión");
-                    cs.endText();
-                    y -= 16f;
-
-                    for (var e : puntajes.entrySet()) {
-                        if (y < margin + 40f) break; // evita desbordar la página
-                        cs.beginText();
-                        cs.setFont(PDType1Font.HELVETICA, 12);
-                        cs.newLineAtOffset(margin, y);
-                        cs.showText(e.getKey() + ": " + e.getValue());
-                        cs.endText();
-                        y -= 14f;
-                    }
-                } else {
-                    cs.beginText();
-                    cs.setFont(PDType1Font.HELVETICA_OBLIQUE, 12);
-                    cs.newLineAtOffset(margin, y);
-                    cs.showText("Aún no hay puntajes para mostrar.");
-                    cs.endText();
-                }
-            }
-
-            doc.save(pdfPath.toFile());
-        }
-
-        return pdfPath;
     }
 }
