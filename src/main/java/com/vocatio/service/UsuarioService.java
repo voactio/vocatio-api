@@ -52,7 +52,7 @@ public class UsuarioService {
     }
 
     // FUNCIONALIDAD 2 - MODIFICAR PERFIL
-    public Usuario updateUsuario(Long id, UpdateUsuarioRequest request) {
+    public Usuario updateUsuario(UUID id, UpdateUsuarioRequest request) {
         Optional<Usuario> optionalUsuario = usuarioRepository.findById(id);
         if (optionalUsuario.isEmpty()) {
             throw new RuntimeException("Usuario no encontrado");

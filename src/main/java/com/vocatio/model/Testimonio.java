@@ -17,8 +17,8 @@ public class Testimonio {
     @JoinColumn(name = "id_carrera", nullable = false)
     private Carrera carrera;
 
-    @Column(name = "id_usuario", nullable = false, length = 64)
-    private String idUsuario;
+    @Column(name = "id_usuario", nullable = false)
+    private UUID idUsuario;
 
     @Column(name = "texto_testimonio", nullable = false, columnDefinition = "TEXT")
     private String textoTestimonio;
@@ -40,8 +40,8 @@ public class Testimonio {
     public String getId() { return id; }
     public Carrera getCarrera() { return carrera; }
     public void setCarrera(Carrera carrera) { this.carrera = carrera; }
-    public String getIdUsuario() { return idUsuario; }
-    public void setIdUsuario(String idUsuario) { this.idUsuario = idUsuario; }
+    public UUID getIdUsuario() { return idUsuario; }
+    public void setIdUsuario(UUID idUsuario) { this.idUsuario = idUsuario; }
     public String getTextoTestimonio() { return textoTestimonio; }
     public void setTextoTestimonio(String textoTestimonio) { this.textoTestimonio = textoTestimonio; }
     public boolean isAprobado() { return aprobado; }

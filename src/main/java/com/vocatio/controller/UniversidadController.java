@@ -4,6 +4,7 @@ import com.vocatio.dto.response.PosiblesUniversidades;
 import com.vocatio.dto.response.UniversidadesItemDTO;
 import com.vocatio.service.UniversidadService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -16,6 +17,7 @@ public class UniversidadController {
         this.service = service;
     }
 
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @GetMapping("/{careerId}/universities")
     public PosiblesUniversidades listByCareer(
             @PathVariable Long careerId,

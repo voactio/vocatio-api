@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -21,7 +22,7 @@ public class CareerCompareService {
 
     public CompareCareersResponse comparar(CompareCareersRequest request) {
 
-        Long idUsuario   = request.getIdUsuario();
+        UUID idUsuario   = request.getIdUsuario();
         Long idResultado = request.getIdResultado();
 
         // 1. top 5 real según tu SQL

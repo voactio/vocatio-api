@@ -7,10 +7,11 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public interface ResultadosTestRepository extends JpaRepository<ResultadosTest, Long> {
 
-    Optional<ResultadosTest> findByIdAndIdUsuario(Long id, Long idUsuario);
+    Optional<ResultadosTest> findByIdAndIdUsuario(Long id, UUID idUsuario);
 
     @Query(value = """
         WITH resultados AS (
@@ -58,6 +59,6 @@ public interface ResultadosTestRepository extends JpaRepository<ResultadosTest, 
         """, nativeQuery = true)
     List<Long> findTop5CarrerasByResultadoAndUsuario(
             @Param("idResultado") Long idResultado,
-            @Param("idUsuario") Long idUsuario
+            @Param("idUsuario") UUID idUsuario
     );
 }

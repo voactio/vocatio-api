@@ -6,7 +6,10 @@ import com.vocatio.dto.response.ResultadoTestDTO;
 import com.vocatio.dto.response.StartTestResponseDTO;
 import com.vocatio.service.TestService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/tests")
@@ -18,12 +21,14 @@ public class TestController {
         this.testService = testService;
     }
 
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @PostMapping("/{testId}/iniciar")
-    public ResponseEntity<StartTestResponseDTO> iniciarTest(@PathVariable Long testId, @RequestParam Long userId) {
+    public ResponseEntity<StartTestResponseDTO> iniciarTest(@PathVariable Long testId, @RequestParam UUID userId) {
         StartTestResponseDTO response = testService.iniciarTest(testId, userId);
         return ResponseEntity.ok(response);
     }
 
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @PostMapping("/sessions/{sessionId}/answers")
     public ResponseEntity<PreguntaDTO> submitAnswer(
             @PathVariable Long sessionId,
@@ -42,6 +47,7 @@ public class TestController {
         }
     }
 
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @GetMapping("/sessions/{sessionId}/results")
     public ResponseEntity<ResultadoTestDTO> getTestResults(@PathVariable Long sessionId) {
         ResultadoTestDTO resultados = testService.getTestResults(sessionId);

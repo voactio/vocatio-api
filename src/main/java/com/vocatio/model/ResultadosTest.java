@@ -6,6 +6,7 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.UUID;
 
 @Entity
 @Getter
@@ -20,7 +21,7 @@ public class ResultadosTest {
     private Long id;
 
     @Column(name = "id_usuario", nullable = false)
-    private Long idUsuario;
+    private UUID idUsuario;
 
     @Column(name = "id_test", nullable = false)
     private Long idTest;
