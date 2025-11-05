@@ -1,29 +1,29 @@
 package com.vocatio.controller;
 
-import com.vocatio.dto.response.PosiblesUniversidades;
-import com.vocatio.dto.response.UniversidadesItemDTO;
+import com.vocatio.dto.request.UniversitiesByCareerRequest;
+import com.vocatio.dto.response.UniversitiesByCareerResponse;
 import com.vocatio.service.UniversidadService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/careers")
+@RequestMapping("/carreras")
+@RequiredArgsConstructor
 public class UniversidadController {
 
     private final UniversidadService service;
 
-    public UniversidadController(UniversidadService service) {
-        this.service = service;
-    }
-
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
-    @GetMapping("/{careerId}/universities")
-    public PosiblesUniversidades listByCareer(
-            @PathVariable Long careerId,
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int size
+    @PostMapping("/{idCarrera}/universidades")
+    public ResponseEntity<UniversitiesByCareerResponse> listarUniversidades(
+            @PathVariable Long idCarrera
     ) {
-        return service.getByCareer(careerId, page, size); // el service lanza 404 si corresponde
+        var req = new UniversitiesByCareerRequest();
+        req.setIdCarrera(idCarrera);
+
+        var resp = service.obtener(req);
+        return ResponseEntity.ok(resp);
     }
 }

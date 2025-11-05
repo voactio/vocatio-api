@@ -1,11 +1,17 @@
 package com.vocatio.model;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.Data;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "universidades")
 @Data
+@Getter
+@Setter
 public class Universidad {
 
     @Id
@@ -14,9 +20,8 @@ public class Universidad {
     @Column(nullable = false)
     private String nombre;
 
-    private String ubicacion;              // city
+    private String ubicacion;
 
-    // "public" / "private" según tu carga
     private String tipo;
 
     @Column(name = "url_sitio_web")
