@@ -4,11 +4,8 @@ import com.vocatio.model.ResultadosTest;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
-import java.util.UUID;
 
-public interface ResultadosTestRepository extends JpaRepository<ResultadosTest, UUID> {
-    Optional<ResultadosTest> findFirstByIdUsuarioOrderByCompletadoEnDesc(UUID idUsuario);
+public interface ResultadosTestRepository extends JpaRepository<ResultadosTest, Long> {
 
-    // ➕ NUEVO:
-    Optional<ResultadosTest> findByIdTest(UUID idTest);
+    Optional<ResultadosTest> findByIdAndIdUsuario(Long id, Long idUsuario);
 }
