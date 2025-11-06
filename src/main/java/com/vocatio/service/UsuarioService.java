@@ -63,6 +63,10 @@ public class UsuarioService {
         // actualizar perfil
         user.setNombre(request.getNombre());
         if (request.getContrasena() != null && !request.getContrasena().isBlank()) {
+            String password = request.getContrasena();
+            if (!password.matches("^(?=.*[A-Za-z])(?=.*\\d).{8,}$")) {
+                throw new RuntimeException("Contraseña inválida: debe tener letras, números y al menos 8 caracteres");
+            }
             user.setContrasena(BCrypt.hashpw(request.getContrasena(), BCrypt.gensalt()));
         }
         user.setNivelEducativo(request.getNivelEducativo());

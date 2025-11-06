@@ -30,8 +30,15 @@ public class AuthService {
 
     @Transactional
     public AuthResponse register(RegisterUsuarioRequest request) {
+        // Validar correo repetido
         if (usuarioRepository.existsByCorreo(request.getCorreo())) {
             throw new RuntimeException("El correo ya está registrado");
+        }
+
+        // Validar contraseña
+        String password = request.getContrasena();
+        if (!password.matches("^(?=.*[A-Za-z])(?=.*\\d).{8,}$")) {
+            throw new RuntimeException("Contraseña inválida: debe tener letras, números y al menos 8 caracteres");
         }
 
         Role userRole = roleRepository.findByName(RoleType.ROLE_USER).orElseThrow(() -> new RuntimeException("El role USER no existe"));
