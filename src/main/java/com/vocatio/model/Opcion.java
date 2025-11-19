@@ -18,5 +18,5 @@ public class Opcion {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_area_interes")
-    private AreasInteres areaInteres;
+    private AreaInteres areaInteres;
 }
