@@ -59,7 +59,8 @@ public class AuthService {
 
         String token = jwtUtil.generateToken(savedUser.getCorreo(), savedUser.getNombre(), savedUser.getId());
 
-        return new AuthResponse(token, savedUser.getCorreo(), savedUser.getNombre());
+        return new AuthResponse(token, savedUser.getCorreo(), savedUser.getNombre(), savedUser.getId(),
+                savedUser.getNivelEducativo(), savedUser.getCarrera().getId(), savedUser.getUrlImagenPerfil());
     }
 
     @Transactional(readOnly = true)
@@ -76,7 +77,8 @@ public class AuthService {
 
         String token = jwtUtil.generateToken(user.getCorreo(), user.getNombre(), user.getId());
 
-        return new AuthResponse(token, user.getCorreo(), user.getNombre());
+        return new AuthResponse(token, user.getCorreo(), user.getNombre(), user.getId(), user.getNivelEducativo(),
+                user.getCarrera().getId(), user.getUrlImagenPerfil());
     }
 }
 

@@ -114,5 +114,12 @@ public class UsuarioService {
 
         return response;
     }
+
+    // FUNCIONALIDAD ADICIONAL - OBTENER USUARIO
+    public Usuario getUsuarioById(UUID id) {
+        return usuarioRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+    }
+
 }
 
