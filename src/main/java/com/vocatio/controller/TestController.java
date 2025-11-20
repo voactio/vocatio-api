@@ -4,26 +4,38 @@ import com.vocatio.dto.request.SubmitAnswerRequestDTO;
 import com.vocatio.dto.response.PreguntaDTO;
 import com.vocatio.dto.response.ResultadoTestDTO;
 import com.vocatio.dto.response.StartTestResponseDTO;
+import com.vocatio.security.JwtUtil;
 import com.vocatio.service.TestService;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/tests")
+@RequiredArgsConstructor
 public class TestController {
 
     private final TestService testService;
+    private final JwtUtil jwtUtil;
 
-    public TestController(TestService testService) {
-        this.testService = testService;
+    private UUID getUserIdFromToken(HttpServletRequest request) {
+        String bearerToken = request.getHeader("Authorization");
+        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
+            String token = bearerToken.substring(7);
+            return jwtUtil.getUserIdFromToken(token);
+        }
+        throw new RuntimeException("Usuario no autenticado");
     }
 
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @PostMapping("/{testId}/iniciar")
-    public ResponseEntity<StartTestResponseDTO> iniciarTest(@PathVariable Long testId, @RequestParam UUID userId) {
+    public ResponseEntity<StartTestResponseDTO> iniciarTest(@PathVariable Long testId, HttpServletRequest request) {
+        UUID userId = getUserIdFromToken(request);
         StartTestResponseDTO response = testService.iniciarTest(testId, userId);
         return ResponseEntity.ok(response);
     }
@@ -34,11 +46,7 @@ public class TestController {
             @PathVariable Long sessionId,
             @RequestBody SubmitAnswerRequestDTO answerRequest) {
 
-        PreguntaDTO nextQuestion = testService.submitAnswerAndGetNext(
-                sessionId,
-                answerRequest.getPreguntaId(),
-                answerRequest.getOpcionId()
-        );
+        PreguntaDTO nextQuestion = testService.submitAnswerAndGetNext(sessionId, answerRequest);
 
         if (nextQuestion != null) {
             return ResponseEntity.ok(nextQuestion);
