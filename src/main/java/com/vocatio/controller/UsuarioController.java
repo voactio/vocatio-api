@@ -3,6 +3,7 @@ package com.vocatio.controller;
 import com.vocatio.dto.request.LoginRequest;
 import com.vocatio.dto.request.RegisterUsuarioRequest;
 import com.vocatio.dto.request.UpdateUsuarioRequest;
+import com.vocatio.dto.response.UsuarioResponse;
 import com.vocatio.model.Usuario;
 import com.vocatio.service.UsuarioService;
 import jakarta.validation.Valid;
@@ -39,19 +40,16 @@ public class UsuarioController {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("mensaje", "Usuario no encontrado"));
             }
 
-            Map<String, Object> usuarioM = new HashMap<>();
-            usuarioM.put("id", usuarioModificado.getId());
-            usuarioM.put("nombre", usuarioModificado.getNombre());
-            usuarioM.put("correo", usuarioModificado.getCorreo());
-            usuarioM.put("nivelEducativo", usuarioModificado.getNivelEducativo());
-            usuarioM.put("carreraId", usuarioModificado.getCarrera().getId());
-            usuarioM.put("urlImagenPerfil",  usuarioModificado.getUrlImagenPerfil());
-            usuarioM.put("creadoEn", usuarioModificado.getCreadoEn());
-            usuarioM.put("actualizadoEn", usuarioModificado.getActualizadoEn());
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("mensaje", "Usuario actualizado correctamente");
-            response.put("usuario", usuarioM);
+            UsuarioResponse response = new UsuarioResponse(
+                    usuarioModificado.getId(),
+                    usuarioModificado.getNombre(),
+                    usuarioModificado.getCorreo(),
+                    usuarioModificado.getNivelEducativo(),
+                    usuarioModificado.getCarrera() != null
+                            ? usuarioModificado.getCarrera().getId()
+                            : null,
+                    usuarioModificado.getUrlImagenPerfil()
+            );
 
             return ResponseEntity.ok(response);
         } catch (RuntimeException e){
@@ -60,5 +58,30 @@ public class UsuarioController {
         }
     }
 
+
+    // FUNCIONALIDAD ADICIONAL - OBTENER USUARIO POR ID
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getUsuarioById(@PathVariable UUID id) {
+
+        try {
+            Usuario user = usuarioService.getUsuarioById(id);
+
+            UsuarioResponse response = new UsuarioResponse(
+                    user.getId(),
+                    user.getNombre(),
+                    user.getCorreo(),
+                    user.getNivelEducativo(),
+                    user.getCarrera() != null ? user.getCarrera().getId() : null,
+                    user.getUrlImagenPerfil()
+            );
+
+            return ResponseEntity.ok(response);
+
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("mensaje", e.getMessage()));
+        }
+    }
 }
 

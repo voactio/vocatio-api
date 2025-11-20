@@ -71,7 +71,8 @@ public class AuthControllerTest {
     @Test
     @DisplayName("POST /auth/register - registro exitoso")
     void registerUsuarioExitoso() throws Exception {
-        AuthResponse response = new AuthResponse("token-jwt", usuario.getCorreo(), usuario.getNombre());
+        AuthResponse response = new AuthResponse("token-jwt", usuario.getCorreo(), usuario.getNombre(), usuario.getId(),
+                usuario.getNivelEducativo(), usuario.getCarrera().getId(), usuario.getUrlImagenPerfil());
         when(authService.register(any(RegisterUsuarioRequest.class))).thenReturn(response);
 
         // ejecuta el POST
@@ -103,7 +104,8 @@ public class AuthControllerTest {
     @Test
     @DisplayName("POST /auth/login - login exitoso")
     void loginExitoso() throws Exception {
-        AuthResponse response = new AuthResponse("token-jwt", usuario.getCorreo(), usuario.getNombre());
+        AuthResponse response = new AuthResponse("token-jwt", usuario.getCorreo(), usuario.getNombre(), usuario.getId(),
+                usuario.getNivelEducativo(), usuario.getCarrera().getId(), usuario.getUrlImagenPerfil());
         when(authService.login(any(LoginRequest.class))).thenReturn(response);
 
         mockMvc.perform(post("/auth/login")
