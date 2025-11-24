@@ -1,5 +1,7 @@
 package com.vocatio.controller;
 
+import com.vocatio.dto.request.OlvidoRequest;
+import com.vocatio.dto.request.ReContrasenaRequest;
 import com.vocatio.service.RecuperacionService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,8 +19,8 @@ public class RecuperacionController {
     }
 
     @PostMapping("/olvidoContra")
-    public ResponseEntity<?> olvidar(@RequestBody Map<String, String> body) {
-        return recuperacionService.olvidoContrasena(body.get("correo"));
+    public ResponseEntity<?> olvidar(@RequestBody OlvidoRequest olvidoRequest) {
+        return recuperacionService.olvidoContrasena(olvidoRequest.getCorreo());
     }
 
     @GetMapping("/reestablecerContra")
@@ -27,10 +29,10 @@ public class RecuperacionController {
     }
 
     @PostMapping("/reestablecerContra")
-    public ResponseEntity<?> reestablecer(@RequestBody Map<String, String> body) {
-        String token = body.get("token");
-        String nuevaContra = body.get("nuevaContrasena");
-        String confirmarContra = body.get("confirmarContrasena");
+    public ResponseEntity<?> reestablecer(@RequestBody ReContrasenaRequest reContrasenaRequest) {
+        String token = reContrasenaRequest.getToken();
+        String nuevaContra = reContrasenaRequest.getNuevaContrasena();
+        String confirmarContra = reContrasenaRequest.getConfirmarContrasena();
         return recuperacionService.reestablecerContrasena(token, nuevaContra, confirmarContra);
     }
 }

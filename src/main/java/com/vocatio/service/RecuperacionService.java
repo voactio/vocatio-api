@@ -4,7 +4,6 @@ import com.vocatio.model.TokenRecuperacion;
 import com.vocatio.model.Usuario;
 import com.vocatio.repository.TokenRecuperacionRepository;
 import com.vocatio.repository.UsuarioRepository;
-import org.antlr.v4.runtime.Token;
 import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,16 +26,22 @@ public class RecuperacionService {
     }
 
     // Recuperar Contraseña - INGRESAR CORREO ELECTRONICO
-    public ResponseEntity<?> olvidoContrasena(String correo){
-        if(correo==null || correo.isEmpty())
-            return ResponseEntity.badRequest().body(Map.of("mensaje","Correo no puede estar vacío"));
+    public ResponseEntity<?> olvidoContrasena(String correo) {
+        if (correo == null || correo.isEmpty())
+            return ResponseEntity.badRequest().body(Map.of(
+                    "mensaje", "Correo no puede estar vacío",
+                    "token", "-"
+            ));
 
         if (!correo.contains("@"))
-            return ResponseEntity.badRequest().body(Map.of("mensaje", "Correo no valido"));
+            return ResponseEntity.badRequest().body(Map.of("mensaje", "Correo no valido",
+                    "token", "-"));
 
         Optional<Usuario> usuarioOpt = usuarioRepository.findByCorreo(correo);
         if (usuarioOpt.isEmpty())
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("mensaje","No existe una cuenta con el correo ingresado"));
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                    "mensaje", "No existe una cuenta con el correo ingresado",
+                    "token", "-"));
 
         Usuario usuario = usuarioOpt.get();
 
@@ -50,8 +55,12 @@ public class RecuperacionService {
 
         // SIMULACION DE ENVIO
         System.out.println("Enlace de recuperación: http://localhost:8080/api/auth/reset-password?token=" + token);
-        return ResponseEntity.ok(Map.of("mensaje", "Se envió un enlace de recuperación al correo registrado"));
-    }
+        return ResponseEntity.ok(Map.of(
+                        "mensaje", "Se envió un enlace de recuperación al correo registrado",
+                        "token", token
+                )
+        );
+    };
 
     // Recuperar Contraseña - VALIDEZ DEL TOKEN INGRESADO
     public ResponseEntity<?> validarToken(String token){
