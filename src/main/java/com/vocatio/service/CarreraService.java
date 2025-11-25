@@ -2,6 +2,7 @@ package com.vocatio.service;
 
 import com.vocatio.dto.response.CarreraCardResponse;
 import com.vocatio.dto.response.CarreraDetailResponse;
+import com.vocatio.dto.response.CarreraOptionResponse;
 import com.vocatio.exception.ResourceNotFoundException;
 import com.vocatio.model.Carrera;
 import com.vocatio.repository.CarreraRepository;
@@ -57,6 +58,13 @@ public class CarreraService {
         return carreraRepository.findAll(spec, pageable)
                 .map(this::toCard)
                 .getContent();
+    }
+
+    public List<CarreraOptionResponse> listarOpciones(){
+        return carreraRepository.findAll(Sort.by("nombre"))
+                .stream()
+                .map(c->new CarreraOptionResponse(c.getId(), c.getNombre()))
+                .toList();
     }
 
     private CarreraCardResponse toCard(Carrera c) {

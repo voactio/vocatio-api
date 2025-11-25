@@ -2,6 +2,7 @@ package com.vocatio.controller;
 
 import com.vocatio.dto.response.CarreraCardResponse;
 import com.vocatio.dto.response.CarreraDetailResponse;
+import com.vocatio.dto.response.CarreraOptionResponse;
 import com.vocatio.service.CarreraService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -48,5 +49,11 @@ public class CarreraController {
             @RequestParam(defaultValue = "nombre,asc") String sort
     ) {
         return ResponseEntity.ok(carreraService.buscar(nombre, modalidad, perfilRiasec, page, size, sort));
+    }
+
+    // Listar opciones
+    @GetMapping("/opciones")
+    public ResponseEntity<List<CarreraOptionResponse>> opcionesCarrera(){
+        return ResponseEntity.ok(carreraService.listarOpciones());
     }
 }
