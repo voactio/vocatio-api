@@ -61,4 +61,5 @@ public interface ResultadosTestRepository extends JpaRepository<ResultadosTest, 
             @Param("idResultado") Long idResultado,
             @Param("idUsuario") UUID idUsuario
     );
+    List<ResultadosTest> findByIdUsuarioOrderByCompletadoEnDesc(UUID idUsuario);
 }

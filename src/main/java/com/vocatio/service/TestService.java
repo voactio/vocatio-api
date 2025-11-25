@@ -30,6 +30,8 @@ public class TestService {
     private final CarreraRepository carreraRepository;
     private final ResultadosTestRepository resultadosTestRepository;
     private final ObjectMapper objectMapper;
+    // Nuevo repositorio para guardar el detalle de las carreras
+    private final ResultadoCarreraRepository resultadoCarreraRepository;
 
     // --- US11: INICIAR Y RESPONDER ---
 
@@ -96,10 +98,13 @@ public class TestService {
         session.setEstado("COMPLETED");
         session.setCompletadoEn(LocalDateTime.now());
         testSessionRepository.save(session);
+
+        // Aquí calculamos y guardamos tanto el resultado general como el Top 5 carreras
         guardarResultadosTest(session);
     }
 
     private void guardarResultadosTest(TestSession session) {
+        // 1. Calcular puntajes por área
         Map<String, Integer> puntajes = new HashMap<>();
         for (Long opcionId : session.getRespuestas().values()) {
             Opcion op = opcionRepository.findById(opcionId).orElseThrow();
@@ -109,6 +114,7 @@ public class TestService {
             }
         }
 
+        // 2. Guardar Resultado General (JSON)
         String puntajesJson;
         try {
             puntajesJson = objectMapper.writeValueAsString(puntajes);
@@ -120,15 +126,46 @@ public class TestService {
         resultado.setIdUsuario(session.getUsuario().getId());
         resultado.setIdTest(session.getTest().getId());
         resultado.setCompletadoEn(OffsetDateTime.now().toLocalDateTime());
-
         resultado.setPuntajes(puntajesJson);
 
+        // Intento: Obtener conteo real o usar random si no hay método en repo
         resultado.setIntento((int) (System.currentTimeMillis() % 100000));
 
-        resultadosTestRepository.save(resultado);
+        ResultadosTest savedResult = resultadosTestRepository.save(resultado);
+
+        // 3. Calcular y Guardar Top 5 Carreras (Historial)
+        String areaDominante = puntajes.entrySet().stream()
+                .max(Map.Entry.comparingByValue())
+                .map(Map.Entry::getKey)
+                .orElse("");
+
+        List<Carrera> todas = carreraRepository.findAll();
+
+        // Usamos el método auxiliar calcularCompatibilidad para ordenar
+        List<Carrera> ranking = todas.stream()
+                .sorted((c1, c2) -> {
+                    int score1 = calcularCompatibilidad(areaDominante, c1.getPerfilRiasec());
+                    int score2 = calcularCompatibilidad(areaDominante, c2.getPerfilRiasec());
+                    return Integer.compare(score2, score1); // Descendente
+                })
+                .limit(5)
+                .toList();
+
+        int orden = 1;
+        for (Carrera carrera : ranking) {
+            int porcentaje = calcularCompatibilidad(areaDominante, carrera.getPerfilRiasec());
+
+            ResultadoCarrera rc = new ResultadoCarrera();
+            rc.setResultadoTest(savedResult);
+            rc.setCarrera(carrera);
+            rc.setPorcentaje((double) porcentaje);
+            rc.setOrden(orden++);
+
+            resultadoCarreraRepository.save(rc);
+        }
     }
 
-    // --- US12: OBTENER RESULTADOS ---
+    // --- US12: OBTENER RESULTADOS (Lectura) ---
 
     public ResultadoTestDTO getTestResults(Long sessionId) {
         TestSession session = testSessionRepository.findById(sessionId)
@@ -138,11 +175,12 @@ public class TestService {
             throw new BadRequestException("El test no ha finalizado.");
         }
 
+        // Recalcular puntajes para el gráfico
         Map<String, Long> conteo = session.getRespuestas().values().stream()
                 .map(id -> opcionRepository.findById(id).orElse(null))
                 .filter(Objects::nonNull)
                 .filter(op -> op.getAreaInteres() != null)
-                .map(op -> op.getAreaInteres().getNombre()) // Ej: "Investigador"
+                .map(op -> op.getAreaInteres().getNombre())
                 .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
 
         Map<String, Integer> puntajesDTO = new HashMap<>();
@@ -153,18 +191,11 @@ public class TestService {
                 .map(Map.Entry::getKey)
                 .orElse("");
 
+        // Calcular ranking para mostrar
         List<Carrera> todas = carreraRepository.findAll();
-
         List<CarreraAfinDto> ranking = todas.stream()
                 .map(c -> {
-                    double porcentaje = 0.0;
-                    // Lógica de Match: Si el perfil de la carrera contiene el área dominante
-                    if (c.getPerfilRiasec() != null && !areaDominante.isEmpty() &&
-                            c.getPerfilRiasec().contains(areaDominante)) {
-                        porcentaje = 85.0 + new Random().nextInt(15); // 85% - 100%
-                    } else {
-                        porcentaje = 20.0 + new Random().nextInt(30); // Bajo
-                    }
+                    int match = calcularCompatibilidad(areaDominante, c.getPerfilRiasec());
 
                     return CarreraAfinDto.builder()
                             .id(c.getId())
@@ -172,8 +203,8 @@ public class TestService {
                             .descripcion(c.getDescripcion() != null && c.getDescripcion().length() > 100
                                     ? c.getDescripcion().substring(0, 100) + "..."
                                     : c.getDescripcion())
-                            .areaInteres(c.getPerfilRiasec()) // Mostramos el perfil como área
-                            .porcentajeCompatibilidad(Math.round(porcentaje * 100.0) / 100.0)
+                            .areaInteres(c.getPerfilRiasec())
+                            .porcentajeCompatibilidad((double) match)
                             .build();
                 })
                 .sorted(Comparator.comparingDouble(CarreraAfinDto::getPorcentajeCompatibilidad).reversed())
@@ -187,6 +218,48 @@ public class TestService {
         response.setRankingCarreras(ranking);
 
         return response;
+    }
+
+    // --- NUEVO: OBTENER HISTORIAL ---
+    public List<TestHistoryResponse> getHistorial(UUID userId) {
+        List<ResultadosTest> resultados = resultadosTestRepository.findByIdUsuarioOrderByCompletadoEnDesc(userId);
+
+        return resultados.stream().map(res -> {
+            // Buscamos las carreras guardadas en la tabla nueva
+            List<ResultadoCarrera> carrerasGuardadas = resultadoCarreraRepository.findByResultadoTestOrderByOrdenAsc(res);
+
+            List<CarreraAfinDto> topCarreras = carrerasGuardadas.stream().map(rc ->
+                    CarreraAfinDto.builder()
+                            .id(rc.getCarrera().getId())
+                            .nombre(rc.getCarrera().getNombre())
+                            .porcentajeCompatibilidad(rc.getPorcentaje())
+                            .areaInteres(rc.getCarrera().getPerfilRiasec())
+                            .build()
+            ).toList();
+
+            return TestHistoryResponse.builder()
+                    .idResultado(res.getId())
+                    .fecha(res.getCompletadoEn()) // Convertir a LocalDateTime
+                    .intento(res.getIntento())
+                    .topCarreras(topCarreras)
+                    .build();
+        }).toList();
+    }
+
+    // --- MÉTODOS AUXILIARES ---
+
+    // ¡AQUÍ ESTÁ LA FUNCIÓN QUE FALTABA!
+    private int calcularCompatibilidad(String perfilUsuario, String perfilCarrera) {
+        if (perfilCarrera == null || perfilUsuario == null) return 0;
+
+        // Lógica simple: Si el perfil de la carrera contiene el área dominante del usuario
+        if (perfilCarrera.contains(perfilUsuario)) {
+            // Retorna un valor alto (85-100)
+            return 85 + Math.abs(perfilCarrera.hashCode() % 15);
+        } else {
+            // Retorna un valor bajo (20-50)
+            return 20 + Math.abs(perfilCarrera.hashCode() % 30);
+        }
     }
 
     private PreguntaDTO convertirAPreguntaDTO(Pregunta p) {
