@@ -4,6 +4,7 @@ import com.vocatio.dto.request.SubmitAnswerRequestDTO;
 import com.vocatio.dto.response.PreguntaDTO;
 import com.vocatio.dto.response.ResultadoTestDTO;
 import com.vocatio.dto.response.StartTestResponseDTO;
+import com.vocatio.dto.response.TestHistoryResponse;
 import com.vocatio.security.JwtUtil;
 import com.vocatio.service.TestService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -13,6 +14,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -60,5 +62,12 @@ public class TestController {
     public ResponseEntity<ResultadoTestDTO> getTestResults(@PathVariable Long sessionId) {
         ResultadoTestDTO resultados = testService.getTestResults(sessionId);
         return ResponseEntity.ok(resultados);
+    }
+
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @GetMapping("/historial")
+    public ResponseEntity<List<TestHistoryResponse>> getHistorial(HttpServletRequest request) {
+        UUID userId = getUserIdFromToken(request);
+        return ResponseEntity.ok(testService.getHistorial(userId));
     }
 }
