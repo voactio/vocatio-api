@@ -52,15 +52,19 @@ public class AuthService {
         user.setRole(userRole);
 
         if(request.getCarreraId() != null) {
-            user.setCarrera(carreraRepository.findById(request.getCarreraId()).orElseThrow());
+            user.setCarrera(carreraRepository.findById(request.getCarreraId())
+                    .orElseThrow(() -> new RuntimeException("Carrera no encontrada")));
         }
 
         Usuario savedUser = usuarioRepository.save(user);
 
         String token = jwtUtil.generateToken(savedUser.getCorreo(), savedUser.getNombre(), savedUser.getId());
 
+        Long carreraId = savedUser.getCarrera() != null ? savedUser.getCarrera().getId() : null;
+
         return new AuthResponse(token, savedUser.getCorreo(), savedUser.getNombre(), savedUser.getId(),
-                savedUser.getNivelEducativo(), savedUser.getCarrera().getId(), savedUser.getUrlImagenPerfil());
+                savedUser.getNivelEducativo(), carreraId, savedUser.getUrlImagenPerfil());
+
     }
 
     @Transactional(readOnly = true)
@@ -77,8 +81,11 @@ public class AuthService {
 
         String token = jwtUtil.generateToken(user.getCorreo(), user.getNombre(), user.getId());
 
-        return new AuthResponse(token, user.getCorreo(), user.getNombre(), user.getId(), user.getNivelEducativo(),
-                user.getCarrera().getId(), user.getUrlImagenPerfil());
+        Long carreraId = user.getCarrera() != null ? user.getCarrera().getId() : null;
+
+        return new AuthResponse(token, user.getCorreo(), user.getNombre(), user.getId(),
+                user.getNivelEducativo(), carreraId, user.getUrlImagenPerfil());
+
     }
 }
 
