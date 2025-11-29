@@ -58,4 +58,13 @@ public class GlobalExceptionHandler {
         body.put("message", ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Map<String, Object>> handleGenericException(Exception ex) {
+        ex.printStackTrace();
+        Map<String, Object> body = new HashMap<>();
+        body.put("timestamp", LocalDateTime.now());
+        body.put("error", "INTERNAL_SERVER_ERROR");
+        body.put("message", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
+    }
 }
