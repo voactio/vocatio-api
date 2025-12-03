@@ -3,6 +3,8 @@ package com.vocatio.model;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -32,6 +34,6 @@ public class ResultadosTest {
     @Column(name = "completado_en", nullable = false)
     private LocalDateTime completadoEn;
 
-    @Column(name = "puntajes", columnDefinition = "jsonb", nullable = false)
-    private String puntajes;
+    @JdbcTypeCode(SqlTypes.JSON)
+    private Map<String, Integer> puntajes;
 }

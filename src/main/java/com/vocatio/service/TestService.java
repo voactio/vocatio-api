@@ -11,6 +11,8 @@ import com.vocatio.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
@@ -30,7 +32,6 @@ public class TestService {
     private final CarreraRepository carreraRepository;
     private final ResultadosTestRepository resultadosTestRepository;
     private final ObjectMapper objectMapper;
-    // Nuevo repositorio para guardar el detalle de las carreras
     private final ResultadoCarreraRepository resultadoCarreraRepository;
 
     // --- US11: INICIAR Y RESPONDER ---
@@ -99,7 +100,6 @@ public class TestService {
         session.setCompletadoEn(LocalDateTime.now());
         testSessionRepository.save(session);
 
-        // Aquí calculamos y guardamos tanto el resultado general como el Top 5 carreras
         guardarResultadosTest(session);
     }
 
@@ -114,21 +114,13 @@ public class TestService {
             }
         }
 
-        // 2. Guardar Resultado General (JSON)
-        String puntajesJson;
-        try {
-            puntajesJson = objectMapper.writeValueAsString(puntajes);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("Error al serializar resultados a JSON", e);
-        }
-
+        // 2. Guardar Resultado General
         ResultadosTest resultado = new ResultadosTest();
         resultado.setIdUsuario(session.getUsuario().getId());
         resultado.setIdTest(session.getTest().getId());
         resultado.setCompletadoEn(OffsetDateTime.now().toLocalDateTime());
-        resultado.setPuntajes(puntajesJson);
+        resultado.setPuntajes(puntajes);
 
-        // Intento: Obtener conteo real o usar random si no hay método en repo
         resultado.setIntento((int) (System.currentTimeMillis() % 100000));
 
         ResultadosTest savedResult = resultadosTestRepository.save(resultado);
@@ -141,12 +133,11 @@ public class TestService {
 
         List<Carrera> todas = carreraRepository.findAll();
 
-        // Usamos el método auxiliar calcularCompatibilidad para ordenar
         List<Carrera> ranking = todas.stream()
                 .sorted((c1, c2) -> {
                     int score1 = calcularCompatibilidad(areaDominante, c1.getPerfilRiasec());
                     int score2 = calcularCompatibilidad(areaDominante, c2.getPerfilRiasec());
-                    return Integer.compare(score2, score1); // Descendente
+                    return Integer.compare(score2, score1);
                 })
                 .limit(5)
                 .toList();
@@ -165,7 +156,7 @@ public class TestService {
         }
     }
 
-    // --- US12: OBTENER RESULTADOS (Lectura) ---
+    // --- US12: OBTENER RESULTADOS ---
 
     public ResultadoTestDTO getTestResults(Long sessionId) {
         TestSession session = testSessionRepository.findById(sessionId)
@@ -175,7 +166,6 @@ public class TestService {
             throw new BadRequestException("El test no ha finalizado.");
         }
 
-        // Recalcular puntajes para el gráfico
         Map<String, Long> conteo = session.getRespuestas().values().stream()
                 .map(id -> opcionRepository.findById(id).orElse(null))
                 .filter(Objects::nonNull)
@@ -191,7 +181,6 @@ public class TestService {
                 .map(Map.Entry::getKey)
                 .orElse("");
 
-        // Calcular ranking para mostrar
         List<Carrera> todas = carreraRepository.findAll();
         List<CarreraAfinDto> ranking = todas.stream()
                 .map(c -> {
@@ -220,12 +209,11 @@ public class TestService {
         return response;
     }
 
-    // --- NUEVO: OBTENER HISTORIAL ---
+    // --- US13: OBTENER HISTORIAL ---
     public List<TestHistoryResponse> getHistorial(UUID userId) {
         List<ResultadosTest> resultados = resultadosTestRepository.findByIdUsuarioOrderByCompletadoEnDesc(userId);
 
         return resultados.stream().map(res -> {
-            // Buscamos las carreras guardadas en la tabla nueva
             List<ResultadoCarrera> carrerasGuardadas = resultadoCarreraRepository.findByResultadoTestOrderByOrdenAsc(res);
 
             List<CarreraAfinDto> topCarreras = carrerasGuardadas.stream().map(rc ->
@@ -239,7 +227,7 @@ public class TestService {
 
             return TestHistoryResponse.builder()
                     .idResultado(res.getId())
-                    .fecha(res.getCompletadoEn()) // Convertir a LocalDateTime
+                    .fecha(res.getCompletadoEn())
                     .intento(res.getIntento())
                     .topCarreras(topCarreras)
                     .build();
@@ -247,17 +235,11 @@ public class TestService {
     }
 
     // --- MÉTODOS AUXILIARES ---
-
-    // ¡AQUÍ ESTÁ LA FUNCIÓN QUE FALTABA!
     private int calcularCompatibilidad(String perfilUsuario, String perfilCarrera) {
         if (perfilCarrera == null || perfilUsuario == null) return 0;
-
-        // Lógica simple: Si el perfil de la carrera contiene el área dominante del usuario
         if (perfilCarrera.contains(perfilUsuario)) {
-            // Retorna un valor alto (85-100)
             return 85 + Math.abs(perfilCarrera.hashCode() % 15);
         } else {
-            // Retorna un valor bajo (20-50)
             return 20 + Math.abs(perfilCarrera.hashCode() % 30);
         }
     }

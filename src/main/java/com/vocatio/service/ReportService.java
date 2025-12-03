@@ -1,7 +1,5 @@
 package com.vocatio.service;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vocatio.dto.response.CarreraAfinDto;
 import com.vocatio.dto.response.GenerateReportResponse;
 import com.vocatio.exception.ResourceNorFoundException;
@@ -23,7 +21,8 @@ public class ReportService {
     private final CarreraAreaInteresRepository carreraAreaInteresRepository;
     private final CarreraRepository carreraRepository;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    // ELIMINADO: Ya no necesitamos ObjectMapper porque Hibernate nos da el Map listo
+    // private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
      * Lee el resultado, cruza con áreas y carreras y devuelve todo listo
@@ -35,10 +34,11 @@ public class ReportService {
                 .findByIdAndIdUsuario(idResultado, idUsuario)
                 .orElseThrow(() -> new ResourceNorFoundException("Resultado no encontrado o no pertenece al usuario"));
 
-        // 2. convertir el jsonb a Map<String, Integer>
-        Map<String, Integer> puntajesPorArea = parsearPuntajes(resultado.getPuntajes());
+        // 2. CORRECCIÓN: Obtener el mapa directamente. Hibernate ya lo convirtió de JSONB a Map.
+        Map<String, Integer> puntajesPorArea = resultado.getPuntajes();
 
-        if (puntajesPorArea.isEmpty()) {
+        // Validación de seguridad por si viene null de base de datos
+        if (puntajesPorArea == null || puntajesPorArea.isEmpty()) {
             return GenerateReportResponse.builder()
                     .idResultado(resultado.getId())
                     .completadoEn(resultado.getCompletadoEn())
@@ -165,14 +165,5 @@ public class ReportService {
         return contenido.getBytes(StandardCharsets.UTF_8);
     }
 
-    // =========================
-    // helpers
-    // =========================
-    private Map<String, Integer> parsearPuntajes(String json) {
-        try {
-            return objectMapper.readValue(json, new TypeReference<Map<String, Integer>>() {});
-        } catch (Exception e) {
-            return Collections.emptyMap();
-        }
-    }
+    // ELIMINADO: Método auxiliar parsearPuntajes ya no es necesario
 }

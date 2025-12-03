@@ -37,7 +37,8 @@ public class SecurityConfig {
                                 "/recuperacion/**",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
-                                "/carreras/opciones"
+                                "/carreras/opciones",
+                                "/error"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
