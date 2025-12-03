@@ -70,4 +70,11 @@ public class TestController {
         UUID userId = getUserIdFromToken(request);
         return ResponseEntity.ok(testService.getHistorial(userId));
     }
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @GetMapping("/resultados/{resultadoId}")
+    public ResponseEntity<ResultadoTestDTO> getResultadosPorId(@PathVariable Long resultadoId, HttpServletRequest request) {
+        UUID userId = getUserIdFromToken(request);
+        ResultadoTestDTO resultados = testService.getResultadosPorId(resultadoId, userId);
+        return ResponseEntity.ok(resultados);
+    }
 }

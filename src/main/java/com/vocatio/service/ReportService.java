@@ -4,11 +4,19 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vocatio.dto.response.CarreraAfinDto;
 import com.vocatio.dto.response.GenerateReportResponse;
+import com.vocatio.dto.response.CarreraRankingDTO;
 import com.vocatio.exception.ResourceNorFoundException;
 import com.vocatio.model.*;
 import com.vocatio.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.layout.Document;
+import com.itextpdf.layout.element.Paragraph;
+import com.itextpdf.layout.properties.TextAlignment;
+import java.io.ByteArrayOutputStream;
+import com.vocatio.repository.ResultadosTestRepository;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -22,6 +30,7 @@ public class ReportService {
     private final AreaInteresRepository areaInteresRepository;
     private final CarreraAreaInteresRepository carreraAreaInteresRepository;
     private final CarreraRepository carreraRepository;
+    private final ResultadoCarreraRepository resultadoCarreraRepository;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -36,7 +45,7 @@ public class ReportService {
                 .orElseThrow(() -> new ResourceNorFoundException("Resultado no encontrado o no pertenece al usuario"));
 
         // 2. convertir el jsonb a Map<String, Integer>
-        Map<String, Integer> puntajesPorArea = parsearPuntajes(resultado.getPuntajes());
+        Map<String, Integer> puntajesPorArea = resultado.getPuntajes();
 
         if (puntajesPorArea.isEmpty()) {
             return GenerateReportResponse.builder()
@@ -73,7 +82,7 @@ public class ReportService {
         }
 
         // 5. buscar todas las relaciones carrera-area para esas áreas
-        List<CarreraAreaInteres> relaciones = carreraAreaInteresRepository.findByIdAreaInteresIn(areaIdToPuntaje.keySet());
+        List<CarreraAreaInteres> relaciones = carreraAreaInteresRepository.findByAreaInteresIdIn(areaIdToPuntaje.keySet());
 
         // 6. acumular puntaje por carrera
         //    fórmula muy simple: scoreCarrera += puntajeAreaUsuario * (relevancia o 1)
@@ -83,20 +92,20 @@ public class ReportService {
         Map<Long, Integer> carreraToBestAreaScore = new HashMap<>();
 
         for (CarreraAreaInteres rel : relaciones) {
-            Long idCarrera = rel.getIdCarrera();
-            Long idArea = rel.getIdAreaInteres();
-            Integer puntajeUsuarioEnArea = areaIdToPuntaje.getOrDefault(idArea, 0);
+            Long carreraId = rel.getCarrera().getId();
+            Long areaId = rel.getAreaInteres().getId();
+            Integer puntajeUsuarioEnArea = areaIdToPuntaje.getOrDefault(areaId, 0);
             int relevancia = rel.getPuntajeRelevancia() != null ? rel.getPuntajeRelevancia() : 1;
 
             double aporte = puntajeUsuarioEnArea * relevancia;
 
-            carreraToScore.merge(idCarrera, (double) aporte, Double::sum);
+            carreraToScore.merge(carreraId, (double) aporte, Double::sum);
 
             // para guardar el área principal de esa carrera
-            int best = carreraToBestAreaScore.getOrDefault(idCarrera, -1);
+            int best = carreraToBestAreaScore.getOrDefault(carreraId, -1);
             if (puntajeUsuarioEnArea > best) {
-                carreraToBestArea.put(idCarrera, idArea);
-                carreraToBestAreaScore.put(idCarrera, puntajeUsuarioEnArea);
+                carreraToBestArea.put(carreraId, areaId);
+                carreraToBestAreaScore.put(carreraId, puntajeUsuarioEnArea);
             }
         }
 
@@ -159,10 +168,97 @@ public class ReportService {
      * Luego aquí ya metes iText/OpenPDF.
      */
     public byte[] generarPdfResultado(Long idResultado, UUID idUsuario) {
-        // puedes reutilizar el método anterior
-        GenerateReportResponse data = obtenerResultadoConRecomendaciones(idResultado, idUsuario);
-        String contenido = "Resultado #" + data.getIdResultado() + " - generado desde el servicio.\n";
-        return contenido.getBytes(StandardCharsets.UTF_8);
+        // 1. Buscar el resultado guardado
+        ResultadosTest resultado = resultadoTestRepository
+                .findByIdAndIdUsuario(idResultado, idUsuario)
+                .orElseThrow(() -> new ResourceNorFoundException("Resultado no encontrado o no pertenece al usuario"));
+
+        // 2. Obtener los puntajes
+        Map<String, Integer> puntajesPorArea = resultado.getPuntajes();
+
+        // 3. Obtener las carreras guardadas en BD (con los porcentajes originales)
+        List<ResultadoCarrera> carrerasGuardadas = resultadoCarreraRepository
+                .findByResultadoTestOrderByOrdenAsc(resultado);
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+        try {
+            PdfWriter writer = new PdfWriter(baos);
+            PdfDocument pdf = new PdfDocument(writer);
+            Document document = new Document(pdf);
+
+            // Título
+            document.add(new Paragraph("RESULTADOS DEL TEST VOCACIONAL")
+                    .setFontSize(20)
+                    .setBold()
+                    .setTextAlignment(TextAlignment.CENTER));
+
+            document.add(new Paragraph("\n"));
+
+            // Información del resultado
+            document.add(new Paragraph("ID Resultado: " + resultado.getId())
+                    .setFontSize(12));
+            document.add(new Paragraph("Fecha: " + resultado.getCompletadoEn())
+                    .setFontSize(12));
+
+            document.add(new Paragraph("\n"));
+
+            // Puntajes por área
+            document.add(new Paragraph("PUNTAJES POR ÁREA DE INTERÉS")
+                    .setFontSize(16)
+                    .setBold());
+
+            for (Map.Entry<String, Integer> entry : puntajesPorArea.entrySet()) {
+                document.add(new Paragraph(entry.getKey() + ": " + entry.getValue() + " puntos")
+                        .setFontSize(12));
+            }
+
+            document.add(new Paragraph("\n"));
+
+            // Top carreras - USAR LOS DATOS GUARDADOS EN BD
+            document.add(new Paragraph("TOP 5 CARRERAS RECOMENDADAS")
+                    .setFontSize(16)
+                    .setBold());
+
+            for (ResultadoCarrera rc : carrerasGuardadas) {
+                Carrera carrera = rc.getCarrera();
+
+                // Obtener área principal
+                String areaPrincipal = carreraAreaInteresRepository
+                        .findByCarreraIdOrderByPuntajeRelevanciaDesc(carrera.getId())
+                        .stream()
+                        .findFirst()
+                        .map(ca -> ca.getAreaInteres().getNombre())
+                        .orElse("SIN_AREA");
+
+                document.add(new Paragraph(rc.getOrden() + ". " + carrera.getNombre())
+                        .setFontSize(14)
+                        .setBold());
+                document.add(new Paragraph("   Compatibilidad: " +
+                        Math.round(rc.getPorcentaje()) + "%")
+                        .setFontSize(12));
+
+                if (carrera.getDescripcion() != null && !carrera.getDescripcion().isEmpty()) {
+                    String desc = carrera.getDescripcion().length() > 100
+                            ? carrera.getDescripcion().substring(0, 100) + "..."
+                            : carrera.getDescripcion();
+                    document.add(new Paragraph("   " + desc)
+                            .setFontSize(11)
+                            .setItalic());
+                }
+
+                document.add(new Paragraph("   Área: " + areaPrincipal)
+                        .setFontSize(12));
+                document.add(new Paragraph("\n"));
+            }
+
+            document.close();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Error al generar PDF", e);
+        }
+
+        return baos.toByteArray();
     }
 
     // =========================

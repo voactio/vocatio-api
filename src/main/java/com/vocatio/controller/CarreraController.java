@@ -56,4 +56,5 @@ public class CarreraController {
     public ResponseEntity<List<CarreraOptionResponse>> opcionesCarrera(){
         return ResponseEntity.ok(carreraService.listarOpciones());
     }
+
 }
