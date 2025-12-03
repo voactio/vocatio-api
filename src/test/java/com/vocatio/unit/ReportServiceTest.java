@@ -52,13 +52,11 @@ class ReportServiceTest {
         rt.setId(idResultado);
         rt.setIdUsuario(idUsuario);
         rt.setCompletadoEn(LocalDateTime.now());
-        rt.setPuntajes("""
-                {
-                  "Ciberseguridad": 9,
-                  "Sistemas y redes": 7,
-                  "Programación y desarrollo de software": 4
-                }
-                """);
+        rt.setPuntajes(Map.of(
+                "Ciberseguridad", 9,
+                "Sistemas y redes", 7,
+                "Programación y desarrollo de software", 4
+        ));
 
         when(resultadosTestRepository.findByIdAndIdUsuario(idResultado, idUsuario))
                 .thenReturn(Optional.of(rt));
@@ -129,9 +127,9 @@ class ReportServiceTest {
                 () -> reportService.obtenerResultadoConRecomendaciones(idResultado, idUsuario));
     }
 
-    // TEST 3: el resultado existe pero el JSON de puntajes viene vacío
+    // TEST 3: el resultado existe pero el Map de puntajes viene vacío
     @Test
-    void obtenerResultadoConRecomendaciones_jsonVacio_devuelveVacio() {
+    void obtenerResultadoConRecomendaciones_mapVacio_devuelveVacio() {
         Long idResultado = 5L;
         UUID idUsuario = UUID.randomUUID();
 
@@ -139,12 +137,12 @@ class ReportServiceTest {
         rt.setId(idResultado);
         rt.setIdUsuario(idUsuario);
         rt.setCompletadoEn(LocalDateTime.now());
-        rt.setPuntajes("{}");
+
+        // CORRECCIÓN: Usamos un mapa vacío
+        rt.setPuntajes(Collections.emptyMap());
 
         when(resultadosTestRepository.findByIdAndIdUsuario(idResultado, idUsuario))
                 .thenReturn(Optional.of(rt));
-
-        when(areaInteresRepository.findAll()).thenReturn(List.of());
 
         GenerateReportResponse resp =
                 reportService.obtenerResultadoConRecomendaciones(idResultado, idUsuario);
@@ -153,6 +151,7 @@ class ReportServiceTest {
         assertTrue(resp.getPuntajes().isEmpty());
         assertTrue(resp.getTopCarreras().isEmpty());
     }
+
     // TEST 4: generar PDF
     @Test
     void generarPdfResultado_devuelveBytes() {
@@ -163,9 +162,8 @@ class ReportServiceTest {
         rt.setId(idResultado);
         rt.setIdUsuario(idUsuario);
         rt.setCompletadoEn(LocalDateTime.now());
-        rt.setPuntajes("""
-            { "Ciberseguridad": 9 }
-            """);
+        rt.setPuntajes(Map.of("Ciberseguridad", 9));
+
         when(resultadosTestRepository.findByIdAndIdUsuario(idResultado, idUsuario))
                 .thenReturn(Optional.of(rt));
         when(areaInteresRepository.findAll()).thenReturn(List.of());
