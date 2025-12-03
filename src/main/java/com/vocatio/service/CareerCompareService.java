@@ -8,11 +8,13 @@ import com.vocatio.model.Carrera;
 import com.vocatio.repository.CarreraRepository;
 import com.vocatio.repository.ResultadosTestRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CareerCompareService {
@@ -25,25 +27,43 @@ public class CareerCompareService {
         UUID idUsuario   = request.getIdUsuario();
         Long idResultado = request.getIdResultado();
 
-        // 1. top 5 real según tu SQL
+        log.info("Comparando carreras - Usuario: {}, Resultado: {}, Carrera1: {}, Carrera2: {}",
+                idUsuario, idResultado, request.getIdCarrera1(), request.getIdCarrera2());
+
+        // 1. Verificar que el resultado existe y pertenece al usuario
+        var resultado = resultadosTestRepository.findByIdAndIdUsuario(idResultado, idUsuario)
+                .orElseThrow(() -> new BadRequestException("No se encontró el resultado del test para este usuario."));
+
+        log.info("Resultado encontrado: {}", resultado.getId());
+
+        // 2. top 5 real según tu SQL
         List<Long> top5 = resultadosTestRepository
                 .findTop5CarrerasByResultadoAndUsuario(idResultado, idUsuario);
+
+        log.info("Top 5 carreras encontradas: {}", top5);
 
         if (top5.isEmpty()) {
             throw new BadRequestException("No hay ranking de carreras para ese resultado.");
         }
 
-        // 2. validar que las dos estén ahí
-        if (!top5.contains(request.getIdCarrera1()) ||
-                !top5.contains(request.getIdCarrera2())) {
-            throw new BadRequestException("Solo puedes comparar carreras que salieron en tu ranking (top 5) de ese resultado.");
+        // 3. validar que las dos estén ahí
+        if (!top5.contains(request.getIdCarrera1())) {
+            log.error("Carrera1 {} no está en el top 5: {}", request.getIdCarrera1(), top5);
+            throw new BadRequestException("La primera carrera seleccionada no está en tu ranking (top 5).");
         }
 
-        // 3. cargar carreras
+        if (!top5.contains(request.getIdCarrera2())) {
+            log.error("Carrera2 {} no está en el top 5: {}", request.getIdCarrera2(), top5);
+            throw new BadRequestException("La segunda carrera seleccionada no está en tu ranking (top 5).");
+        }
+
+        // 4. cargar carreras
         Carrera c1 = carreraRepository.findById(request.getIdCarrera1())
                 .orElseThrow(() -> new ResourceNotFoundException("Carrera 1 no encontrada"));
         Carrera c2 = carreraRepository.findById(request.getIdCarrera2())
                 .orElseThrow(() -> new ResourceNotFoundException("Carrera 2 no encontrada"));
+
+        log.info("Carreras cargadas: {} y {}", c1.getNombre(), c2.getNombre());
 
         var item1 = CompareCareersResponse.CareerCompareItem.builder()
                 .id(c1.getId())
